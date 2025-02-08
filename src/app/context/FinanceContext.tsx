@@ -41,11 +41,17 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    localStorage.setItem(
-      "transactions",
-      JSON.stringify([...transactions, ...initialTransactions])
+    const storedTransactions = JSON.parse(
+      localStorage.getItem("transactions") || "[]"
     );
-  }, [transactions]);
+
+    if (storedTransactions.length === 0) {
+      localStorage.setItem("transactions", JSON.stringify(initialTransactions));
+      setTransactions(initialTransactions);
+    } else {
+      setTransactions(storedTransactions);
+    }
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("categoryBudgets", JSON.stringify(categoryBudgets));

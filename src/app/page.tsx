@@ -1,8 +1,8 @@
 "use client";
+
 import { useState } from "react";
 import { useFinance } from "./context/FinanceContext";
-import styles from "./styles/Home.module.scss";
-import { Pie, Bar, Doughnut } from "react-chartjs-2";
+
 import Budget from "./components/Budget";
 import {
   Chart as ChartJS,
@@ -12,7 +12,12 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
+  PointElement,
+  LineElement,
 } from "chart.js";
+import { Container, Typography, Tabs, Tab, Box } from "@mui/material";
+import Dashboard from "./components/Dashboard";
+import Transactions from "./components/Transactions";
 
 ChartJS.register(
   ArcElement,
@@ -20,7 +25,9 @@ ChartJS.register(
   Legend,
   CategoryScale,
   LinearScale,
-  BarElement
+  BarElement,
+  PointElement,
+  LineElement
 );
 
 export default function Home() {
@@ -42,33 +49,21 @@ export default function Home() {
     date: "",
   });
 
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState(0); // ✅ Use index for Material Tabs
 
-  const handleAddTransaction = (e: React.FormEvent) => {
-    e.preventDefault();
-    const parsedAmount = parseFloat(form.amount);
-    if (isNaN(parsedAmount)) {
-      alert("Please enter a valid number for the amount.");
-      return;
-    }
-
-    const newTransaction = {
-      id: Date.now(),
-      name: form.name.trim(),
-      amount: parsedAmount,
-      category: form.category.trim(),
-      date: form.date,
-    };
-
-    addTransaction(newTransaction);
-    setForm({ name: "", amount: "", category: "", date: "" });
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
   };
 
+  const sortedCategoryEntries = Object.entries(categoryTotals).sort(
+    (a, b) => b[1] - a[1]
+  ); // Sort by value descending
+
   const chartData = {
-    labels: Object.keys(categoryTotals),
+    labels: sortedCategoryEntries.map(([category]) => category),
     datasets: [
       {
-        data: Object.values(categoryTotals),
+        data: sortedCategoryEntries.map(([_, amount]) => amount),
         backgroundColor: [
           "#ff6384",
           "#36a2eb",
@@ -80,90 +75,102 @@ export default function Home() {
       },
     ],
   };
+  const aggregatedData = transactions.reduce(
+    (acc: Record<string, number>, tx) => {
+      const dateLabel = new Date(tx.date).toLocaleDateString("default", {
+        month: "short",
+        day: "numeric",
+      });
+
+      acc[dateLabel] = (acc[dateLabel] || 0) + Math.abs(tx.amount); // Aggregate spending per date
+      return acc;
+    },
+    {}
+  );
+
+  const lineData = {
+    labels: Object.keys(aggregatedData), // Unique, sorted dates
+    datasets: [
+      {
+        label: "Spending Over Time",
+        data: Object.values(aggregatedData), // Corresponding aggregated values
+        borderColor: "#36a2eb",
+        backgroundColor: "rgba(54, 162, 235, 0.2)", // Light fill under the line
+        fill: true, // ✅ Fills the area under the line
+        tension: 0.3, // ✅ Smooth curve effect
+        pointRadius: 4, // ✅ Visible data points
+        pointBackgroundColor: "#36a2eb",
+      },
+    ],
+  };
+  const barData = {
+    labels: Object.keys(
+      transactions.reduce((acc: Record<string, number>, tx) => {
+        const month = new Date(tx.date).toLocaleString("default", {
+          month: "short",
+          year: "numeric",
+        });
+        acc[month] = (acc[month] || 0) + Math.abs(tx.amount);
+        return acc;
+      }, {})
+    ),
+    datasets: [
+      {
+        label: "Monthly Spending",
+        data: Object.values(
+          transactions.reduce((acc: Record<string, number>, tx) => {
+            const month = new Date(tx.date).toLocaleString("default", {
+              month: "short",
+              year: "numeric",
+            });
+            acc[month] = (acc[month] || 0) + Math.abs(tx.amount);
+            return acc;
+          }, {})
+        ),
+        backgroundColor: "#36a2eb",
+      },
+    ],
+  };
 
   return (
-    <div className={styles.container}>
-      <h1>Personal Finance Dashboard</h1>
+    <Container>
+      <Typography variant="h3" gutterBottom>
+        Personal Finance Dashboard
+      </Typography>
 
-      <div className={styles.tabs}>
-        <button onClick={() => setActiveTab("dashboard")}>Dashboard</button>
-        <button onClick={() => setActiveTab("transactions")}>
-          Transactions
-        </button>
-        <button onClick={() => setActiveTab("budget")}>Budget</button>
-      </div>
+      {/* ✅ Material UI Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}>
+        <Tabs value={activeTab} onChange={handleTabChange} centered>
+          <Tab label="Dashboard" />
+          <Tab label="Transactions" />
+          <Tab label="Budget" />
+        </Tabs>
+      </Box>
 
-      {activeTab === "dashboard" && (
-        <>
-          <div className={styles.summaryCards}>
-            <div className={styles.card}>
-              <h2>Total Balance</h2>
-              <p>${totalBalance.toFixed(2)}</p>
-            </div>
-            <div className={styles.card}>
-              <h2>Total Income</h2>
-              <p>${totalIncome.toFixed(2)}</p>
-            </div>
-            <div className={styles.card}>
-              <h2>Total Expenses</h2>
-              <p>${Math.abs(totalExpenses).toFixed(2)}</p>
-            </div>
-          </div>
-          <div className={styles.chartWrapper}>
-            <div className={styles.chartContainer}>
-              <h2>Expense Breakdown</h2>
-              <Doughnut data={chartData} />
-            </div>
-            <div className={styles.chartContainer}>
-              <h2>Expense Breakdown</h2>
-              <Bar data={chartData} />
-            </div>
-          </div>
-        </>
+      {/* ✅ Conditionally Render Components Based on Active Tab */}
+      {activeTab === 0 && (
+        <Dashboard
+          totalBalance={totalBalance}
+          totalIncome={totalIncome}
+          totalExpenses={totalExpenses}
+          chartData={chartData}
+          barData={barData}
+          lineData={lineData}
+        />
       )}
-
-      {activeTab === "transactions" && (
-        <>
-          <form onSubmit={handleAddTransaction} className={styles.form}>
-            <input
-              type="text"
-              placeholder="Transaction Name"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              required
-            />
-            <input
-              type="number"
-              placeholder="Amount (use negative for expenses)"
-              value={form.amount}
-              onChange={(e) => setForm({ ...form, amount: e.target.value })}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Category"
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-              required
-            />
-            <input
-              type="date"
-              value={form.date}
-              onChange={(e) => setForm({ ...form, date: e.target.value })}
-              required
-            />
-            <button type="submit">Add Transaction</button>
-          </form>
-        </>
+      {activeTab === 1 && (
+        <Transactions
+          transactions={transactions}
+          addTransaction={addTransaction}
+        />
       )}
-
-      {activeTab === "budget" && (
+      {activeTab === 2 && (
         <Budget
           categoryBudgets={categoryBudgets}
           setCategoryBudgets={setCategoryBudgets}
           totalExpenses={categoryTotals}
         />
       )}
-    </div>
+    </Container>
   );
 }
