@@ -1,95 +1,169 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+import { useState } from "react";
+import { useFinance } from "./context/FinanceContext";
+import styles from "./styles/Home.module.scss";
+import { Pie, Bar, Doughnut } from "react-chartjs-2";
+import Budget from "./components/Budget";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+} from "chart.js";
+
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement
+);
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const {
+    transactions,
+    addTransaction,
+    categoryBudgets,
+    setCategoryBudgets,
+    totalIncome,
+    totalExpenses,
+    totalBalance,
+    categoryTotals,
+  } = useFinance();
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const [form, setForm] = useState({
+    name: "",
+    amount: "",
+    category: "",
+    date: "",
+  });
+
+  const [activeTab, setActiveTab] = useState("dashboard");
+
+  const handleAddTransaction = (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsedAmount = parseFloat(form.amount);
+    if (isNaN(parsedAmount)) {
+      alert("Please enter a valid number for the amount.");
+      return;
+    }
+
+    const newTransaction = {
+      id: Date.now(),
+      name: form.name.trim(),
+      amount: parsedAmount,
+      category: form.category.trim(),
+      date: form.date,
+    };
+
+    addTransaction(newTransaction);
+    setForm({ name: "", amount: "", category: "", date: "" });
+  };
+
+  const chartData = {
+    labels: Object.keys(categoryTotals),
+    datasets: [
+      {
+        data: Object.values(categoryTotals),
+        backgroundColor: [
+          "#ff6384",
+          "#36a2eb",
+          "#ffce56",
+          "#4bc0c0",
+          "#9966ff",
+          "#ff9f40",
+        ],
+      },
+    ],
+  };
+
+  return (
+    <div className={styles.container}>
+      <h1>Personal Finance Dashboard</h1>
+
+      <div className={styles.tabs}>
+        <button onClick={() => setActiveTab("dashboard")}>Dashboard</button>
+        <button onClick={() => setActiveTab("transactions")}>
+          Transactions
+        </button>
+        <button onClick={() => setActiveTab("budget")}>Budget</button>
+      </div>
+
+      {activeTab === "dashboard" && (
+        <>
+          <div className={styles.summaryCards}>
+            <div className={styles.card}>
+              <h2>Total Balance</h2>
+              <p>${totalBalance.toFixed(2)}</p>
+            </div>
+            <div className={styles.card}>
+              <h2>Total Income</h2>
+              <p>${totalIncome.toFixed(2)}</p>
+            </div>
+            <div className={styles.card}>
+              <h2>Total Expenses</h2>
+              <p>${Math.abs(totalExpenses).toFixed(2)}</p>
+            </div>
+          </div>
+          <div className={styles.chartWrapper}>
+            <div className={styles.chartContainer}>
+              <h2>Expense Breakdown</h2>
+              <Doughnut data={chartData} />
+            </div>
+            <div className={styles.chartContainer}>
+              <h2>Expense Breakdown</h2>
+              <Bar data={chartData} />
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeTab === "transactions" && (
+        <>
+          <form onSubmit={handleAddTransaction} className={styles.form}>
+            <input
+              type="text"
+              placeholder="Transaction Name"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              required
             />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+            <input
+              type="number"
+              placeholder="Amount (use negative for expenses)"
+              value={form.amount}
+              onChange={(e) => setForm({ ...form, amount: e.target.value })}
+              required
+            />
+            <input
+              type="text"
+              placeholder="Category"
+              value={form.category}
+              onChange={(e) => setForm({ ...form, category: e.target.value })}
+              required
+            />
+            <input
+              type="date"
+              value={form.date}
+              onChange={(e) => setForm({ ...form, date: e.target.value })}
+              required
+            />
+            <button type="submit">Add Transaction</button>
+          </form>
+        </>
+      )}
+
+      {activeTab === "budget" && (
+        <Budget
+          categoryBudgets={categoryBudgets}
+          setCategoryBudgets={setCategoryBudgets}
+          totalExpenses={categoryTotals}
+        />
+      )}
     </div>
   );
 }
