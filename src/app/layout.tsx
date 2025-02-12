@@ -6,14 +6,14 @@ import { Container, Typography, Tabs, Tab, Box } from "@mui/material";
 import { FinanceProvider } from "./context/FinanceContext";
 import { Roboto } from "next/font/google";
 import { DM_Serif_Display } from "next/font/google";
+import "./globals.css";
 
+const roboto = Roboto({ subsets: ["latin"], weight: ["400", "700"] });
 const dmSerif = DM_Serif_Display({
   subsets: ["latin"],
   weight: "400",
   variable: "--dm-serif",
 });
-
-const roboto = Roboto({ subsets: ["latin"], weight: ["400", "700"] });
 
 export default function RootLayout({
   children,
@@ -31,7 +31,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className={dmSerif.variable}>
+    <html lang="en" title="Personal Finance Dashboard">
       {/* ✅ Apply variable at HTML level */}
       <body className={roboto.className}>
         <Container>
@@ -40,6 +40,7 @@ export default function RootLayout({
             fontWeight={"bold"}
             variant="h1"
             gutterBottom
+            className={dmSerif.className}
           >
             Personal Finance Dashboard
           </Typography>
@@ -47,10 +48,30 @@ export default function RootLayout({
           {/* ✅ Tabs for Navigation */}
           <Box sx={{ borderBottom: 1, borderColor: "divider", mt: 2, mb: 2 }}>
             <Tabs value={getTabIndex()} centered>
-              <Tab component={Link} href="/dashboard" label="Dashboard" />
-              <Tab component={Link} href="/transactions" label="Transactions" />
-              <Tab component={Link} href="/budget" label="Budget" />
-              <Tab component={Link} href="/trends" label="Trends" />
+              <Tab
+                sx={{ fontWeight: 600 }}
+                component={Link}
+                href="/dashboard"
+                label="Dashboard"
+              />
+              <Tab
+                sx={{ fontWeight: 600 }}
+                component={Link}
+                href="/transactions"
+                label="Transactions"
+              />
+              <Tab
+                sx={{ fontWeight: 600 }}
+                component={Link}
+                href="/budget"
+                label="Budget"
+              />
+              <Tab
+                sx={{ fontWeight: 600 }}
+                component={Link}
+                href="/trends"
+                label="Trends"
+              />
             </Tabs>
           </Box>
 

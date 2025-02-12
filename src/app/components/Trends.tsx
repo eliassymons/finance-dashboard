@@ -81,7 +81,7 @@ export default function Trends() {
           });
 
           setLoading(false);
-        }, 1000);
+        }, 0);
       } catch (error) {
         console.error("Error fetching market data", error);
         setLoading(false);
