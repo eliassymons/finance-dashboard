@@ -22,11 +22,11 @@ import {
 const DEFAULT_BUDGETS: {
   [key: string]: { amount: number; icon: React.ReactNode };
 } = {
-  food: { amount: 200, icon: <Fastfood color="primary" /> },
+  food: { amount: 200, icon: <Fastfood color="warning" /> },
   transport: { amount: 100, icon: <DirectionsBus color="secondary" /> },
-  entertainment: { amount: 150, icon: <Movie color="success" /> },
+  entertainment: { amount: 150, icon: <Movie color="primary" /> },
   shopping: { amount: 250, icon: <ShoppingBag color="error" /> },
-  utilities: { amount: 180, icon: <Home color="warning" /> },
+  utilities: { amount: 180, icon: <Home color="action" /> },
   housing: { amount: 1000, icon: <Apartment color="info" /> }, // 🏠 Added Housing Icon
   fitness: { amount: 75, icon: <FitnessCenter color="success" /> }, // 💪 Added Fitness Icon
 };
@@ -59,7 +59,7 @@ export default function Budget({
 
   return (
     <Box sx={{ maxWidth: 800, mx: "auto", p: 2 }}>
-      <Typography variant="h4" gutterBottom>
+      <Typography fontSize={32} variant="h2" gutterBottom>
         Category-Specific Budgeting
       </Typography>
 
@@ -81,7 +81,7 @@ export default function Budget({
             );
 
             return (
-              <Card key={category} sx={{ p: 2 }}>
+              <Card key={category} sx={{ px: 2 }} variant="outlined">
                 <CardContent>
                   <Box display="flex" alignItems="center" gap={1}>
                     {DEFAULT_BUDGETS[category]?.icon}
@@ -103,13 +103,16 @@ export default function Budget({
                   />
 
                   <Typography variant="body2">
-                    Spent: ${spent.toFixed(2)}
+                    <strong>Spent:</strong> ${spent.toFixed()}
                   </Typography>
                   <Typography
                     variant="body2"
-                    color={remaining < 0 ? "error" : "textPrimary"}
+                    color={remaining < 0 ? "FF6961" : "textPrimary"}
                   >
-                    Remaining: ${remaining.toFixed(2)}
+                    <strong>
+                      {remaining >= 0 ? "Remaining:" : "Over budget by:"}
+                    </strong>{" "}
+                    ${Math.abs(remaining).toFixed()}
                   </Typography>
 
                   <Box sx={{ mt: 1 }}>
@@ -117,12 +120,11 @@ export default function Budget({
                       variant="determinate"
                       value={percentageSpent}
                       sx={{
-                        height: 8,
+                        height: 12,
                         borderRadius: 5,
                         bgcolor: "#ddd",
                         "& .MuiLinearProgress-bar": {
-                          bgcolor:
-                            remaining < 0 ? "error.main" : "primary.main",
+                          bgcolor: remaining < 0 ? "#FF6961" : "#70b04d ",
                         },
                       }}
                     />

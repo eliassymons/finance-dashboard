@@ -64,11 +64,19 @@ export const initialTransactions: Transaction[] = [
     category: "Utilities",
     date: "2024-01-20",
   },
+
   {
     id: 10,
     name: "Bonus",
     amount: 700,
     category: "Income",
     date: "2024-01-22",
+  },
+  {
+    id: 11,
+    name: "asdfasdf Bill",
+    amount: -600,
+    category: "Utilities",
+    date: "2022-01-20",
   },
 ];
