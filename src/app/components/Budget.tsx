@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Card,
   CardContent,
   Typography,
-  TextField,
   Box,
   LinearProgress,
+  Tooltip,
+  IconButton,
 } from "@mui/material";
 import {
   DirectionsBus,
@@ -17,49 +18,40 @@ import {
   ShoppingBag,
   FitnessCenter,
   Apartment,
+  Edit,
 } from "@mui/icons-material";
+import { useFinance } from "../context/FinanceContext";
+import Loading from "./Loading";
 
-const DEFAULT_BUDGETS: {
-  [key: string]: { amount: number; icon: React.ReactNode };
-} = {
-  food: { amount: 200, icon: <Fastfood color="warning" /> },
-  transport: { amount: 100, icon: <DirectionsBus color="secondary" /> },
-  entertainment: { amount: 150, icon: <Movie color="primary" /> },
-  shopping: { amount: 250, icon: <ShoppingBag color="error" /> },
-  utilities: { amount: 180, icon: <Home color="action" /> },
-  housing: { amount: 1000, icon: <Apartment color="info" /> }, // 🏠 Added Housing Icon
-  fitness: { amount: 75, icon: <FitnessCenter color="success" /> }, // 💪 Added Fitness Icon
+// Default icons for categories
+const CATEGORY_ICONS: { [key: string]: React.ReactNode } = {
+  food: <Fastfood color="warning" />,
+  transportation: <DirectionsBus color="secondary" />,
+  entertainment: <Movie color="primary" />,
+  shopping: <ShoppingBag color="error" />,
+  utilities: <Home color="action" />,
+  housing: <Apartment color="info" />,
+  fitness: <FitnessCenter color="success" />,
 };
 
 interface BudgetProps {
-  totalExpenses: { [key: string]: number };
-  categoryBudgets: { [key: string]: number };
-  setCategoryBudgets: any;
+  totalExpenses: { [key: string]: number }; // Expenses per category
 }
 
-export default function Budget({
-  totalExpenses,
-  categoryBudgets,
-  setCategoryBudgets,
-}: BudgetProps) {
-  const updateCategoryBudget = (category: string, value: number) => {
-    setCategoryBudgets({ ...categoryBudgets, [category]: value });
-  };
+const capitalize = (str: string): string => {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
 
-  useEffect(() => {
-    setCategoryBudgets((prevBudgets: any) => {
-      const updatedBudgets: { [key: string]: number } = {};
-      for (const category in DEFAULT_BUDGETS) {
-        updatedBudgets[category] =
-          prevBudgets?.[category] ?? DEFAULT_BUDGETS[category].amount;
-      }
-      return updatedBudgets;
-    });
-  }, []);
+export default function Budget({ totalExpenses }: BudgetProps) {
+  const { categoryBudgets, isLoading, isFetching } = useFinance(); // ✅ Get budgets from FinanceContext
+
+  if (isLoading || isFetching) {
+    return <Loading name="Budgets" />;
+  }
 
   return (
     <Box sx={{ maxWidth: 800, mx: "auto", p: 2 }}>
-      <Typography fontSize={32} variant="h2" gutterBottom>
+      <Typography textAlign="center" fontSize={32} variant="h2" gutterBottom>
         Category-Specific Budgeting
       </Typography>
 
@@ -73,41 +65,48 @@ export default function Budget({
         >
           {Object.keys(totalExpenses).map((category) => {
             const spent = totalExpenses[category] || 0;
-            const budget = categoryBudgets[category] || 0;
+            const budget = categoryBudgets[category] || 0; // ✅ Use global `categoryBudgets`
             const remaining = budget - spent;
             const percentageSpent = Math.min(
-              100,
-              (spent / (budget || 1)) * 100
+              (spent / (budget || 1)) * 100,
+              100
             );
+            const tooltipText = `Click for a more in-depth look at your ${category} spending.`;
 
             return (
               <Card key={category} sx={{ px: 2 }} variant="outlined">
                 <CardContent>
                   <Box display="flex" alignItems="center" gap={1}>
-                    {DEFAULT_BUDGETS[category]?.icon}
-                    <Typography variant="h6">{category}</Typography>
+                    {CATEGORY_ICONS[category] || <Home />} {/* Default icon */}
+                    <Typography variant="h6">{capitalize(category)}</Typography>
+                    <Link
+                      key={category}
+                      href={`/budget/${category}`}
+                      passHref
+                      style={{
+                        textDecoration: "none",
+                        color: "inherit",
+                        marginLeft: "auto",
+                      }}
+                    >
+                      <Tooltip title={tooltipText} arrow placement="right">
+                        <IconButton>
+                          <Edit />
+                        </IconButton>
+                      </Tooltip>
+                    </Link>
                   </Box>
 
-                  <TextField
-                    fullWidth
-                    label="Budget"
-                    type="number"
-                    value={budget}
-                    onChange={(e) =>
-                      updateCategoryBudget(
-                        category,
-                        parseFloat(e.target.value) || 0
-                      )
-                    }
-                    sx={{ mt: 1, mb: 2 }}
-                  />
+                  <Typography sx={{ fontSize: 32, fontWeight: 600 }}>
+                    ${budget.toLocaleString()}
+                  </Typography>
 
                   <Typography variant="body2">
                     <strong>Spent:</strong> ${spent.toFixed()}
                   </Typography>
                   <Typography
                     variant="body2"
-                    color={remaining < 0 ? "FF6961" : "textPrimary"}
+                    color={remaining < 0 ? "error" : "textPrimary"}
                   >
                     <strong>
                       {remaining >= 0 ? "Remaining:" : "Over budget by:"}
@@ -124,7 +123,7 @@ export default function Budget({
                         borderRadius: 5,
                         bgcolor: "#ddd",
                         "& .MuiLinearProgress-bar": {
-                          bgcolor: remaining < 0 ? "#FF6961" : "#70b04d ",
+                          bgcolor: remaining < 0 ? "#FF6961" : "#70b04d",
                         },
                       }}
                     />

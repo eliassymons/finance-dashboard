@@ -7,6 +7,7 @@ import { FinanceProvider } from "./context/FinanceContext";
 import { Roboto } from "next/font/google";
 import { DM_Serif_Display } from "next/font/google";
 import "./globals.css";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["400", "700"] });
 const dmSerif = DM_Serif_Display({
@@ -15,6 +16,7 @@ const dmSerif = DM_Serif_Display({
   variable: "--dm-serif",
 });
 
+const queryClient = new QueryClient();
 export default function RootLayout({
   children,
 }: {
@@ -31,53 +33,55 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" title="Personal Finance Dashboard">
+    <html lang="en">
       {/* ✅ Apply variable at HTML level */}
       <body className={roboto.className}>
-        <Container>
-          <Typography
-            fontSize={40}
-            fontWeight={"bold"}
-            variant="h1"
-            gutterBottom
-            className={dmSerif.className}
-          >
-            Personal Finance Dashboard
-          </Typography>
+        <QueryClientProvider client={queryClient}>
+          <Container>
+            <Typography
+              fontSize={40}
+              fontWeight={"bold"}
+              variant="h1"
+              gutterBottom
+              className={dmSerif.className}
+            >
+              Personal Finance Dashboard
+            </Typography>
 
-          {/* ✅ Tabs for Navigation */}
-          <Box sx={{ borderBottom: 1, borderColor: "divider", mt: 2, mb: 2 }}>
-            <Tabs value={getTabIndex()} centered>
-              <Tab
-                sx={{ fontWeight: 600 }}
-                component={Link}
-                href="/dashboard"
-                label="Dashboard"
-              />
-              <Tab
-                sx={{ fontWeight: 600 }}
-                component={Link}
-                href="/transactions"
-                label="Transactions"
-              />
-              <Tab
-                sx={{ fontWeight: 600 }}
-                component={Link}
-                href="/budget"
-                label="Budget"
-              />
-              <Tab
-                sx={{ fontWeight: 600 }}
-                component={Link}
-                href="/trends"
-                label="Trends"
-              />
-            </Tabs>
-          </Box>
+            {/* ✅ Tabs for Navigation */}
+            <Box sx={{ borderBottom: 1, borderColor: "divider", mt: 2, mb: 2 }}>
+              <Tabs value={getTabIndex()} centered>
+                <Tab
+                  sx={{ fontWeight: 600 }}
+                  component={Link}
+                  href="/dashboard"
+                  label="Dashboard"
+                />
+                <Tab
+                  sx={{ fontWeight: 600 }}
+                  component={Link}
+                  href="/transactions"
+                  label="Transactions"
+                />
+                <Tab
+                  sx={{ fontWeight: 600 }}
+                  component={Link}
+                  href="/budget"
+                  label="Budget"
+                />
+                <Tab
+                  sx={{ fontWeight: 600 }}
+                  component={Link}
+                  href="/trends"
+                  label="Trends"
+                />
+              </Tabs>
+            </Box>
 
-          {/* ✅ Renders the active page */}
-          <FinanceProvider>{children}</FinanceProvider>
-        </Container>
+            {/* ✅ Renders the active page */}
+            <FinanceProvider>{children}</FinanceProvider>
+          </Container>
+        </QueryClientProvider>
       </body>
     </html>
   );
