@@ -162,6 +162,7 @@ export default function Transactions() {
                         primary={tx.name}
                         secondary={
                           <Typography
+                            marginRight={2}
                             sx={{
                               color: tx.type === "Income" ? "green" : "red",
                             }}
