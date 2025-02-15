@@ -20,6 +20,7 @@ interface FinanceContextType {
   addTransaction: (transaction: Omit<Transaction, "id">) => void;
   categoryBudgets: BudgetEntry[];
   setCategoryBudgets: React.Dispatch<React.SetStateAction<BudgetEntry[]>>;
+  deleteTransaction: (id: number) => void;
   totalIncome: number;
   totalExpenses: number;
   totalBalance: number;
@@ -83,6 +84,42 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     addTransactionMutation.mutate(transaction);
   };
 
+  const deleteTransactionMutation = useMutation({
+    mutationFn: async (transactionId: number | string) => {
+      const formattedId = String(transactionId); // ✅ Ensure ID is always a string
+      const deleteUrl = `${API_TRANSACTIONS}/${formattedId}`;
+
+      console.log("Attempting to delete transaction:", formattedId);
+      console.log("DELETE request URL:", deleteUrl);
+
+      const response = await fetch(deleteUrl, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        console.error(
+          "Delete request failed:",
+          response.status,
+          response.statusText
+        );
+        throw new Error(`Failed to delete transaction: ${response.statusText}`);
+      }
+
+      return formattedId;
+    },
+    onSuccess: (transactionId) => {
+      console.log("Transaction deleted successfully:", transactionId);
+      queryClient.invalidateQueries({ queryKey: [API_TRANSACTIONS] });
+    },
+    onError: (error) => {
+      console.error("Error deleting transaction:", error);
+    },
+  });
+
+  const deleteTransaction = (transactionId: number | string) => {
+    deleteTransactionMutation.mutate(String(transactionId)); // ✅ Always send string ID
+  };
+
   const totalIncome =
     transactions
       .filter((tx: Transaction) => tx.type === "Income")
@@ -93,7 +130,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       .filter((tx: Transaction) => tx.type === "Expense")
       .reduce((acc: number, tx: Transaction) => acc + tx.amount, 0) || 0;
 
-  const totalBalance = totalIncome - totalExpenses;
+  const totalBalance = totalIncome - Math.abs(totalExpenses);
 
   const categoryTotals = transactions.reduce(
     (acc: { [key: string]: number }, tx: Transaction) => {
@@ -113,6 +150,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         addTransaction,
         categoryBudgets,
         setCategoryBudgets,
+        deleteTransaction,
         totalIncome,
         totalExpenses,
         totalBalance,

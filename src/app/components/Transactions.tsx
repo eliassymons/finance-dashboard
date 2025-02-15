@@ -21,6 +21,7 @@ import {
   ToggleButtonGroup,
   Tooltip,
   CircularProgress,
+  IconButton,
 } from "@mui/material";
 import {
   DirectionsBus,
@@ -31,6 +32,7 @@ import {
   Payment,
   ShoppingBag,
   AttachMoney,
+  Delete,
 } from "@mui/icons-material";
 import { useFinance } from "../context/FinanceContext"; // ✅ Import useFinance
 import zIndex from "@mui/material/styles/zIndex";
@@ -61,7 +63,13 @@ const CATEGORY_ICONS: { [key: string]: React.ElementType } = {
 const categoryFormTooltip = "Only expenses are categorized.";
 
 export default function Transactions() {
-  const { transactions, addTransaction, isLoading, isFetching } = useFinance();
+  const {
+    transactions,
+    addTransaction,
+    isLoading,
+    isFetching,
+    deleteTransaction,
+  } = useFinance();
   const [form, setForm] = useState({
     name: "",
     amount: "",
@@ -163,6 +171,9 @@ export default function Transactions() {
                           </Typography>
                         }
                       />
+                      <IconButton onClick={() => deleteTransaction(tx.id)}>
+                        <Delete></Delete>
+                      </IconButton>
                     </ListItem>
                   </Fade>
                 );
