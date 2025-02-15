@@ -1,83 +1,112 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-} from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Transaction } from "../types/transaction";
-import { initialTransactions } from "../test-data/init-tx";
+import { useFetchData } from "../hooks/useFetchData";
+
+const API_TRANSACTIONS = process.env.NEXT_PUBLIC_API_TRANSACTIONS as string;
+const API_BUDGETS = process.env.NEXT_PUBLIC_API_BUDGETS as string;
 
 // Define types for the context state
 interface FinanceContextType {
   transactions: Transaction[];
-  addTransaction: (transaction: Transaction) => void;
+  addTransaction: (transaction: Omit<Transaction, "id">) => void;
   categoryBudgets: { [key: string]: number };
-  setCategoryBudgets: (budgets: { [key: string]: number }) => void;
+  setCategoryBudgets: React.Dispatch<
+    React.SetStateAction<{ [key: string]: number }>
+  >;
   totalIncome: number;
   totalExpenses: number;
   totalBalance: number;
   categoryTotals: { [key: string]: number };
+  isLoading: boolean; // ✅ New: Loading state
+  isFetching: boolean;
 }
 
 // Create the context
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem("transactions") || "[]");
-    } catch {
-      return [];
-    }
-  });
-
+  const queryClient = useQueryClient();
   const [categoryBudgets, setCategoryBudgets] = useState<{
     [key: string]: number;
-  }>(() => {
-    return JSON.parse(localStorage.getItem("categoryBudgets") || "{}") || {};
+  }>({});
+
+  // ✅ Fetch transactions using useFetchData
+  const {
+    data: transactions = [],
+    error: transactionsError,
+    isLoading: isTransactionsLoading,
+    isFetching: isTransactionsFetching, // ✅ Capture loading state
+  } = useFetchData(API_TRANSACTIONS);
+
+  // ✅ Fetch budgets using useFetchData
+  const {
+    data: budgets = [],
+    error: budgetsError,
+    isLoading: isBudgetsLoading,
+    isFetching: isBudgetsFetching, // ✅ Capture loading state
+  } = useFetchData(API_BUDGETS);
+
+  // ✅ Transform budgets into an object (e.g., { food: 200, rent: 1000 })
+  if (budgets.length > 0 && Object.keys(categoryBudgets).length === 0) {
+    const budgetMap = budgets.reduce(
+      (acc: { [key: string]: number }, item: any) => {
+        acc[item.category.toLowerCase()] = item.budgetedAmount;
+        return acc;
+      },
+      {}
+    );
+    setCategoryBudgets(budgetMap);
+  }
+
+  // ✅ Mutation for adding a new transaction
+  const addTransactionMutation = useMutation({
+    mutationFn: async (transaction: Omit<Transaction, "id">) => {
+      const response = await fetch(API_TRANSACTIONS, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(transaction),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add transaction");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [API_TRANSACTIONS] });
+    },
   });
 
-  useEffect(() => {
-    const storedTransactions = JSON.parse(
-      localStorage.getItem("transactions") || "[]"
-    );
-
-    if (storedTransactions.length === 0) {
-      localStorage.setItem("transactions", JSON.stringify(initialTransactions));
-      setTransactions(initialTransactions);
-    } else {
-      setTransactions(storedTransactions);
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("categoryBudgets", JSON.stringify(categoryBudgets));
-  }, [categoryBudgets]);
-
-  const addTransaction = (transaction: Transaction) => {
-    setTransactions((prev) => [...prev, transaction]);
+  const addTransaction = (transaction: Omit<Transaction, "id">) => {
+    addTransactionMutation.mutate(transaction);
   };
 
   const totalIncome =
     transactions
-      .filter((tx) => tx.amount > 0)
-      .reduce((acc, tx) => acc + tx.amount, 0) || 0;
+      .filter((tx: Transaction) => tx.type === "Income")
+      .reduce((acc: number, tx: Transaction) => acc + tx.amount, 0) || 0;
+
   const totalExpenses =
     transactions
-      .filter((tx) => tx.amount < 0)
-      .reduce((acc, tx) => acc + tx.amount, 0) || 0;
-  const totalBalance = totalIncome + totalExpenses;
+      .filter((tx: Transaction) => tx.type === "Expense")
+      .reduce((acc: number, tx: Transaction) => acc + tx.amount, 0) || 0;
 
-  const categoryTotals = transactions.reduce((acc, tx) => {
-    if (tx.amount < 0) {
-      const cleanCategory = tx.category.trim().toLowerCase();
-      acc[cleanCategory] = (acc[cleanCategory] || 0) + Math.abs(tx.amount);
-    }
-    return acc;
-  }, {} as { [key: string]: number });
+  const totalBalance = totalIncome - totalExpenses;
+
+  const categoryTotals = transactions.reduce(
+    (acc: { [key: string]: number }, tx: Transaction) => {
+      if (tx.type === "Expense") {
+        const cleanCategory = tx.category.trim()?.toLowerCase();
+        acc[cleanCategory] = (acc[cleanCategory] || 0) + Math.abs(tx.amount);
+      }
+      return acc;
+    },
+    {} as { [key: string]: number }
+  );
 
   return (
     <FinanceContext.Provider
@@ -90,6 +119,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         totalExpenses,
         totalBalance,
         categoryTotals,
+        isLoading: isTransactionsLoading || isBudgetsLoading,
+        // ✅ Expose loading state
+        isFetching: isTransactionsFetching || isBudgetsFetching,
       }}
     >
       {children}
