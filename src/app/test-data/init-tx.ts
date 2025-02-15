@@ -7,6 +7,7 @@ export const initialTransactions: Transaction[] = [
     amount: 3000,
     category: "Income",
     date: "2024-01-01",
+    type: "Income",
   },
   {
     id: 2,
@@ -14,6 +15,7 @@ export const initialTransactions: Transaction[] = [
     amount: -1200,
     category: "Housing",
     date: "2024-01-03",
+    type: "Expense",
   },
   {
     id: 3,
@@ -21,6 +23,7 @@ export const initialTransactions: Transaction[] = [
     amount: -250,
     category: "Food",
     date: "2024-01-05",
+    type: "Expense",
   },
   {
     id: 4,
@@ -28,13 +31,15 @@ export const initialTransactions: Transaction[] = [
     amount: -50,
     category: "Fitness",
     date: "2024-01-07",
+    type: "Expense",
   },
   {
     id: 5,
     name: "Freelance Project",
     amount: 500,
-    category: "Income",
+    category: "",
     date: "2024-01-10",
+    type: "Expense",
   },
   {
     id: 6,
@@ -42,6 +47,7 @@ export const initialTransactions: Transaction[] = [
     amount: -100,
     category: "Utilities",
     date: "2024-01-12",
+    type: "Expense",
   },
   {
     id: 7,
@@ -49,13 +55,15 @@ export const initialTransactions: Transaction[] = [
     amount: -80,
     category: "Entertainment",
     date: "2024-01-15",
+    type: "Expense",
   },
   {
     id: 8,
     name: "Car Payment",
     amount: -400,
-    category: "Transport",
+    category: "Transportation",
     date: "2024-01-18",
+    type: "Expense",
   },
   {
     id: 9,
@@ -63,6 +71,7 @@ export const initialTransactions: Transaction[] = [
     amount: -60,
     category: "Utilities",
     date: "2024-01-20",
+    type: "Expense",
   },
 
   {
@@ -71,6 +80,7 @@ export const initialTransactions: Transaction[] = [
     amount: 700,
     category: "Income",
     date: "2024-01-22",
+    type: "Income",
   },
   {
     id: 11,
@@ -78,5 +88,6 @@ export const initialTransactions: Transaction[] = [
     amount: -600,
     category: "Utilities",
     date: "2022-01-20",
+    type: "Expense",
   },
 ];

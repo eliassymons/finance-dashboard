@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { Container, Typography, Paper, CircularProgress } from "@mui/material";
-import { Line, Bar } from "react-chartjs-2";
+import { Line, Bubble } from "react-chartjs-2";
 import { useFinance } from "../context/FinanceContext";
+import "chartjs-adapter-date-fns";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -11,9 +12,10 @@ import {
   Legend,
   CategoryScale,
   LinearScale,
-  BarElement,
   PointElement,
   LineElement,
+  BubbleController,
+  TimeScale,
 } from "chart.js";
 
 ChartJS.register(
@@ -22,92 +24,94 @@ ChartJS.register(
   Legend,
   CategoryScale,
   LinearScale,
-  BarElement,
   PointElement,
-  LineElement
+  LineElement,
+  BubbleController,
+  TimeScale
 );
 
+ChartJS.defaults.font.family = "Roboto";
+
+// ✅ API URLs
+const API_COST_OF_LIVING = process.env.NEXT_PUBLIC_API_COST_OF_LIVING as string;
+const API_TRANSACTIONS = process.env.NEXT_PUBLIC_API_TRANSACTIONS as string;
+
 export default function Trends() {
-  const { categoryTotals } = useFinance(); // Get user's spending by category
   const [loading, setLoading] = useState(true);
-  const [marketData, setMarketData] = useState<any>(null);
-  const [spendingComparison, setSpendingComparison] = useState<any>(null);
+  const [costOfLivingData, setCostOfLivingData] = useState<any>(null);
+  const [spendingData, setSpendingData] = useState<any>(null);
 
   useEffect(() => {
-    async function fetchMarketData() {
+    async function fetchData() {
       try {
-        // Simulated API delay
-        setTimeout(() => {
-          setMarketData({
-            labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-            datasets: [
+        // ✅ Fetch Cost of Living Data
+        const colResponse = await fetch(API_COST_OF_LIVING);
+        if (!colResponse.ok)
+          throw new Error("Failed to fetch cost of living data");
+        const colData = await colResponse.json();
+
+        // ✅ Fetch Transactions for Spending Data
+        const txResponse = await fetch(API_TRANSACTIONS);
+        if (!txResponse.ok) throw new Error("Failed to fetch transactions");
+        const txData = await txResponse.json();
+
+        // ✅ Transform Cost of Living Data (Line Chart)
+        setCostOfLivingData({
+          labels: colData.map((entry: any) => entry.year),
+          datasets: [
+            {
+              label: "Cost of Living Index",
+              data: colData.map((entry: any) => entry.index),
+              borderColor: "#D32F2F",
+              backgroundColor: "rgba(211, 47, 47, 0.2)",
+              fill: true,
+              tension: 0.3,
+            },
+          ],
+        });
+
+        // ✅ Transform Transactions Data (Bubble Chart)
+        setSpendingData({
+          datasets: txData.map((tx: any) => ({
+            label: tx.category,
+            data: [
               {
-                label: "Stock Market Index",
-                data: [3200, 3300, 3100, 3450, 3550, 3650], // Fake data
-                borderColor: "#457B9D",
-                backgroundColor: "rgba(69, 123, 157, 0.2)",
-                fill: true,
-                tension: 0.3,
+                x: new Date(tx.date).getTime(), // ✅ X-axis: Date as timestamp
+                y: tx.amount, // ✅ Y-axis: Amount spent
+                r: Math.min(Math.abs(tx.amount) / 50 + 3, 15), // ✅ Capped at max size of 15
               },
             ],
-          });
+            backgroundColor: "rgba(54, 162, 235, 0.6)", // ✅ Consistent color
+          })),
+        });
 
-          // Fake national average spending data
-          const nationalAverages = {
-            Food: 500,
-            Housing: 1200,
-            Transport: 300,
-            Entertainment: 250,
-            Utilities: 200,
-            Fitness: 23,
-          };
-
-          setSpendingComparison({
-            labels: Object.keys(nationalAverages), // Categories
-            datasets: [
-              {
-                label: "Your Spending ($)",
-                data: Object.keys(nationalAverages).map(
-                  (category) => categoryTotals[category.toLowerCase()] || 0
-                ),
-                backgroundColor: "rgba(54, 162, 235, 0.6)", // User spending
-              },
-              {
-                label: "National Average ($)",
-                data: Object.values(nationalAverages), // National data
-                backgroundColor: "rgba(255, 99, 132, 0.6)", // National benchmark
-              },
-            ],
-          });
-
-          setLoading(false);
-        }, 0);
+        setLoading(false);
       } catch (error) {
-        console.error("Error fetching market data", error);
+        console.error("Error fetching data", error);
         setLoading(false);
       }
     }
 
-    fetchMarketData();
-  }, [categoryTotals]);
+    fetchData();
+  }, []);
 
   return (
     <Container sx={{ padding: 2 }}>
-      <Typography fontSize={32} variant="h2" gutterBottom>
-        Market Trends
+      <Typography textAlign={"center"} fontSize={32} variant="h2" gutterBottom>
+        Spending Trends & Cost of Living
       </Typography>
 
-      {/* 📊 Stock Market Trends */}
+      {/* 📊 Cost of Living Trends */}
       <Paper sx={{ p: 3, mt: 2 }} variant="outlined">
         <Typography variant="h6" gutterBottom>
-          Stock Market Overview
+          Cost of Living Over Time
         </Typography>
         {loading ? (
           <CircularProgress />
         ) : (
           <Line
             style={{ maxHeight: "240px" }}
-            data={marketData}
+            data={costOfLivingData}
             options={{
               responsive: true,
               plugins: {
@@ -118,26 +122,39 @@ export default function Trends() {
         )}
       </Paper>
 
-      {/* 📉 User Spending vs. National Averages */}
+      {/* 🔥 Spending Trends (Bubble Chart) */}
       <Paper sx={{ p: 3, mt: 4 }} variant="outlined">
         <Typography variant="h6" gutterBottom>
-          Your Spending vs. National Averages
+          Spending Over Time
         </Typography>
         {loading ? (
           <CircularProgress />
         ) : (
-          <Bar
-            style={{ maxHeight: "240px" }}
-            data={spendingComparison}
+          <Bubble
+            style={{ maxHeight: "300px" }}
+            data={spendingData}
             options={{
               responsive: true,
+              scales: {
+                x: {
+                  type: "time",
+                  time: {
+                    unit: "month",
+                  },
+                  title: {
+                    display: true,
+                    text: "Time (Months)",
+                  },
+                },
+                y: {
+                  title: {
+                    display: true,
+                    text: "Amount Spent ($)",
+                  },
+                },
+              },
               plugins: {
                 legend: { display: true },
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                },
               },
             }}
           />

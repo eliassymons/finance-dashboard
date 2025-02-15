@@ -5,9 +5,7 @@ import { useFinance } from "../context/FinanceContext";
 
 function TransactionPage() {
   const { transactions, addTransaction } = useFinance();
-  return (
-    <Transactions transactions={transactions} addTransaction={addTransaction} />
-  );
+  return <Transactions />;
 }
 
 export default TransactionPage;

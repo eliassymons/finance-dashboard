@@ -23,12 +23,16 @@ interface DashboardProps {
 }
 
 const pluginDefaults: any = {
-  legend: { position: "bottom", onHover: handleHover, onLeave: handleLeave },
+  legend: {
+    position: "bottom",
+    onHover: handleHover,
+    onLeave: handleLeave,
+  },
   tooltip: {
     callbacks: {
       label: function (tooltipItem: TooltipItem<any>) {
         let value = Number(tooltipItem.raw) || 0;
-        return `$${value.toFixed()}`; // 🔹 Adds "$" and formats to 2 decimal places
+        return `$${value.toLocaleString()}`; // 🔹 Adds "$" and formats to 2 decimal places
       },
     },
   },
@@ -60,6 +64,16 @@ export default function Dashboard({
 }: DashboardProps) {
   return (
     <>
+      {" "}
+      <Typography
+        textAlign={"center"}
+        fontSize={32}
+        mt={4}
+        variant="h2"
+        gutterBottom
+      >
+        Your Finances, At a Glance
+      </Typography>
       {/* 🔹 Summary Cards */}
       <Box
         display="flex"
@@ -153,7 +167,6 @@ export default function Dashboard({
           </CardContent>
         </Card>
       </Box>
-
       {/* 🔹 Charts Section */}
       <Box
         sx={{
