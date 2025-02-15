@@ -65,7 +65,9 @@ export default function Budget({ totalExpenses }: BudgetProps) {
         >
           {Object.keys(totalExpenses).map((category) => {
             const spent = totalExpenses[category] || 0;
-            const budget = categoryBudgets[category] || 0; // ✅ Use global `categoryBudgets`
+            const budget =
+              categoryBudgets.find((c) => c.category === category)
+                ?.budgetedAmount ?? 0; // ✅ Use global `categoryBudgets`
             const remaining = budget - spent;
             const percentageSpent = Math.min(
               (spent / (budget || 1)) * 100,

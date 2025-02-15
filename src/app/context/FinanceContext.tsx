@@ -1,8 +1,14 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+} from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Transaction } from "../types/transaction";
+import { BudgetEntry, Transaction } from "../types/transaction";
 import { useFetchData } from "../hooks/useFetchData";
 
 const API_TRANSACTIONS = process.env.NEXT_PUBLIC_API_TRANSACTIONS as string;
@@ -12,10 +18,8 @@ const API_BUDGETS = process.env.NEXT_PUBLIC_API_BUDGETS as string;
 interface FinanceContextType {
   transactions: Transaction[];
   addTransaction: (transaction: Omit<Transaction, "id">) => void;
-  categoryBudgets: { [key: string]: number };
-  setCategoryBudgets: React.Dispatch<
-    React.SetStateAction<{ [key: string]: number }>
-  >;
+  categoryBudgets: BudgetEntry[];
+  setCategoryBudgets: React.Dispatch<React.SetStateAction<BudgetEntry[]>>;
   totalIncome: number;
   totalExpenses: number;
   totalBalance: number;
@@ -29,9 +33,8 @@ const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const [categoryBudgets, setCategoryBudgets] = useState<{
-    [key: string]: number;
-  }>({});
+
+  const [categoryBudgets, setCategoryBudgets] = useState<BudgetEntry[]>([]);
 
   // ✅ Fetch transactions using useFetchData
   const {
@@ -50,16 +53,11 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   } = useFetchData(API_BUDGETS);
 
   // ✅ Transform budgets into an object (e.g., { food: 200, rent: 1000 })
-  if (budgets.length > 0 && Object.keys(categoryBudgets).length === 0) {
-    const budgetMap = budgets.reduce(
-      (acc: { [key: string]: number }, item: any) => {
-        acc[item.category.toLowerCase()] = item.budgetedAmount;
-        return acc;
-      },
-      {}
-    );
-    setCategoryBudgets(budgetMap);
-  }
+  useEffect(() => {
+    if (budgets.length > 0) {
+      setCategoryBudgets(budgets); // ✅ Store full budget objects, not just numbers
+    }
+  });
 
   // ✅ Mutation for adding a new transaction
   const addTransactionMutation = useMutation({

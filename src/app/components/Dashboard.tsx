@@ -2,69 +2,76 @@
 
 import { Box, Card, CardContent, Typography, Paper } from "@mui/material";
 import { Doughnut, Bar, Line } from "react-chartjs-2";
-import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import {
   AttachMoney,
-  Padding,
   Savings,
-  SavingsTwoTone,
+  TrendingUp,
+  TrendingDown,
 } from "@mui/icons-material";
-import { TooltipItem } from "chart.js";
+import { useFinance } from "../context/FinanceContext"; // ✅ Import useFinance
+import Loading from "../components/Loading"; // ✅ Import Loading component
 
-interface DashboardProps {
-  totalBalance: number;
-  totalIncome: number;
-  totalExpenses: number;
-  chartData: any;
-  barData: any;
-  lineData: any;
-}
+export default function Dashboard() {
+  const {
+    totalBalance,
+    totalIncome,
+    totalExpenses,
+    categoryTotals, // ✅ Use for chartData
+    isLoading,
+    isFetching,
+  } = useFinance();
 
-const pluginDefaults: any = {
-  legend: {
-    position: "bottom",
-    onHover: handleHover,
-    onLeave: handleLeave,
-  },
-  tooltip: {
-    callbacks: {
-      label: function (tooltipItem: TooltipItem<any>) {
-        let value = Number(tooltipItem.raw) || 0;
-        return `$${value.toLocaleString()}`; // 🔹 Adds "$" and formats to 2 decimal places
+  // ✅ Show loading while data is being fetched
+  if (isLoading || isFetching) {
+    return <Loading name="Dashboard" />;
+  }
+
+  // ✅ Prepare Chart Data (Doughnut)
+  const chartData = {
+    labels: Object.keys(categoryTotals),
+    datasets: [
+      {
+        label: "Expenses",
+        data: Object.values(categoryTotals),
+        backgroundColor: [
+          "#FF6384",
+          "#36A2EB",
+          "#FFCE56",
+          "#70b04d",
+          "#4CAF50",
+        ],
+        borderWidth: 1,
       },
-    },
-  },
-};
-function handleHover(evt: Event, item: any, legend: any) {
-  legend.chart.data.datasets[0].backgroundColor.forEach(
-    (color: string, index: number, colors: string[]) => {
-      colors[index] =
-        index === item.index || color.length === 9 ? color : color + "4D";
-    }
-  );
-  legend.chart.update();
-}
-function handleLeave(evt: Event, item: any, legend: any) {
-  legend.chart.data.datasets[0].backgroundColor.forEach(
-    (color: string, index: number, colors: string[]) => {
-      colors[index] = color.length === 9 ? color.slice(0, -2) : color;
-    }
-  );
-  legend.chart.update();
-}
-export default function Dashboard({
-  totalBalance,
-  totalIncome,
-  totalExpenses,
-  chartData,
-  barData,
-  lineData,
-}: DashboardProps) {
+    ],
+  };
+
+  // ✅ Mock Bar & Line Chart Data (Replace with actual transaction history)
+  const barData = {
+    labels: ["Jan", "Feb", "Mar", "Apr", "May"],
+    datasets: [
+      {
+        label: "Monthly Spending",
+        data: [200, 300, 250, 400, 500],
+        backgroundColor: "#36A2EB",
+      },
+    ],
+  };
+
+  const lineData = {
+    labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
+    datasets: [
+      {
+        label: "Spending Over Time",
+        data: [150, 220, 180, 300],
+        borderColor: "#FF6384",
+        backgroundColor: "rgba(255, 99, 132, 0.2)",
+        fill: true,
+      },
+    ],
+  };
+
   return (
     <>
-      {" "}
       <Typography
         textAlign={"center"}
         fontSize={32}
@@ -74,6 +81,7 @@ export default function Dashboard({
       >
         Your Finances, At a Glance
       </Typography>
+
       {/* 🔹 Summary Cards */}
       <Box
         display="flex"
@@ -89,8 +97,7 @@ export default function Dashboard({
               justifyContent="space-between"
               alignItems="center"
             >
-              {" "}
-              <TrendingUpIcon color="success" sx={{ fontSize: 48 }} />
+              <TrendingUp color="success" sx={{ fontSize: 48 }} />
               <Box sx={{ textAlign: "right" }}>
                 <Typography variant="h6">Income</Typography>
                 <Typography fontSize={40} fontWeight={"700"} variant="body1">
@@ -110,8 +117,7 @@ export default function Dashboard({
               alignItems="center"
               textAlign="right"
             >
-              {" "}
-              <TrendingDownIcon color="error" sx={{ fontSize: 48 }} />
+              <TrendingDown color="error" sx={{ fontSize: 48 }} />
               <Box>
                 <Typography variant="h6">Expenses</Typography>
                 <Typography fontSize={40} fontWeight={"700"} variant="body1">
@@ -121,6 +127,7 @@ export default function Dashboard({
             </Box>
           </CardContent>
         </Card>
+
         {/* 💰 Total Balance */}
         <Card sx={{ flex: "1 1 200px" }} variant="outlined">
           <CardContent>
@@ -130,7 +137,6 @@ export default function Dashboard({
               alignItems="center"
               textAlign="right"
             >
-              {/* 📄 Text Content */}{" "}
               <AttachMoney color="primary" sx={{ fontSize: 48 }} />
               <Box>
                 <Typography variant="h6">Balance</Typography>
@@ -138,11 +144,11 @@ export default function Dashboard({
                   ${totalBalance.toLocaleString()}
                 </Typography>
               </Box>
-              {/* 🔹 Icon */}
             </Box>
           </CardContent>
         </Card>
-        {/* 💰 Savings  Rate */}
+
+        {/* 💰 Savings Rate */}
         <Card sx={{ flex: "1 1 200px" }} variant="outlined">
           <CardContent>
             <Box
@@ -151,7 +157,6 @@ export default function Dashboard({
               alignItems="center"
               textAlign="right"
             >
-              {" "}
               <Savings color="primary" sx={{ fontSize: 48 }} />
               <Box>
                 <Typography variant="h6">Savings Rate</Typography>
@@ -167,6 +172,7 @@ export default function Dashboard({
           </CardContent>
         </Card>
       </Box>
+
       {/* 🔹 Charts Section */}
       <Box
         sx={{
@@ -188,15 +194,21 @@ export default function Dashboard({
           variant="outlined"
         >
           <Typography variant="h6">Expense Breakdown</Typography>
-
           <Doughnut
-            datatype="currency"
             data={chartData}
             options={{
               responsive: true,
               maintainAspectRatio: false,
-
-              plugins: pluginDefaults,
+              plugins: {
+                legend: { position: "bottom" },
+                tooltip: {
+                  callbacks: {
+                    label: function (tooltipItem) {
+                      return `$${tooltipItem?.raw?.toLocaleString()}`;
+                    },
+                  },
+                },
+              },
             }}
           />
         </Paper>
@@ -218,11 +230,7 @@ export default function Dashboard({
             <Typography variant="h6">Monthly Spending Trends</Typography>
             <Bar
               data={barData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: pluginDefaults,
-              }}
+              options={{ responsive: true, maintainAspectRatio: false }}
             />
           </Paper>
 
@@ -233,11 +241,7 @@ export default function Dashboard({
             <Typography variant="h6">Spending Over Time</Typography>
             <Line
               data={lineData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: pluginDefaults,
-              }}
+              options={{ responsive: true, maintainAspectRatio: false }}
             />
           </Paper>
         </Box>

@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 async function fetchData(url: string) {
-  //   await new Promise((resolve) => setTimeout(resolve, 3000)); // Comment in to see loading
+  //   await new Promise((resolve) => setTimeout(resolve, 2000)); // Comment in to see loading
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error("Failed to fetch data");

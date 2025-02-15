@@ -42,29 +42,56 @@ export default function BudgetCategoryPage() {
   );
 
   const totalSpent = categoryTotals[category] || 0;
-  const budgetedAmount = categoryBudgets[category] || 0;
+  const budgetedAmount =
+    categoryBudgets.find((c) => c.category === category)?.budgetedAmount ?? 0;
   const remainingBudget = budgetedAmount - totalSpent;
   const budgetUsagePercentage =
     budgetedAmount > 0 ? Math.min((totalSpent / budgetedAmount) * 100, 100) : 0;
 
   // ✅ State for user input when adjusting the budget
   const [newBudget, setNewBudget] = useState<number>(budgetedAmount);
+  const API_BUDGETS = process.env.NEXT_PUBLIC_API_BUDGETS as string; // ✅ Load API URL
 
-  const updateBudgetMutation = useMutation<
-    { budgetedAmount: number }, // ✅ Expected return type
-    Error, // ✅ Error type
-    number // ✅ Mutation input type (new budget amount)
-  >({
+  const updateBudgetMutation = useMutation({
     mutationFn: async (newBudgetAmount: number) => {
-      const response = await fetch(`/api/budgets/${category}`, {
+      const budgetEntry = categoryBudgets.find(
+        (entry) => entry.category.toLowerCase() === category
+      );
+      if (!budgetEntry || !budgetEntry.id) {
+        console.error("Budget ID not found for category:", category);
+        throw new Error("Budget ID not found.");
+      }
+
+      const budgetId = budgetEntry.id;
+
+      const response = await fetch(`${API_BUDGETS}/${budgetId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`,
+        },
         body: JSON.stringify({ budgetedAmount: newBudgetAmount }),
       });
 
-      if (!response.ok) throw new Error("Failed to update budget");
+      if (!response.ok) {
+        console.error("Response Error:", response.status, response.statusText);
+        throw new Error("Failed to update budget");
+      }
 
-      return response.json();
+      const updatedBudget = await response.json();
+      return updatedBudget;
+    },
+    onSuccess: (updatedBudget) => {
+      setCategoryBudgets((prevBudgets) =>
+        prevBudgets.map((b) =>
+          b.id === updatedBudget.id
+            ? { ...b, budgetedAmount: updatedBudget.budgetedAmount }
+            : b
+        )
+      );
+
+      // ✅ Invalidate query so Next.js refetches fresh data
+      queryClient.invalidateQueries({ queryKey: [API_BUDGETS] });
     },
   });
 
