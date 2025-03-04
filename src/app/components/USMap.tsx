@@ -19,10 +19,6 @@ const GeoJSON = dynamic(
   () => import("react-leaflet").then((mod) => mod.GeoJSON),
   { ssr: false }
 );
-const Tooltip = dynamic(
-  () => import("react-leaflet").then((mod) => mod.Tooltip),
-  { ssr: false }
-);
 
 const center: [number, number] = [37.8, -96];
 

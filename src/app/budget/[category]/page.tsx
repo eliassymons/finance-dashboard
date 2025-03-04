@@ -30,19 +30,22 @@ export default function BudgetCategoryPage() {
     ? params.category[0]
     : params.category || "";
 
-  const {
-    categoryTotals,
-    transactions,
-    categoryBudgets,
-    updateBudget,
-    isLoading,
-    isFetching,
-  } = useFinance();
+  const { transactions, categoryBudgets, updateBudget, isLoading, isFetching } =
+    useFinance();
 
   const budgetEntry = categoryBudgets.find(
     (b) => b.category.toLowerCase() === category
   );
-
+  // Mutation to update budget
+  const updateBudgetMutation = useMutation({
+    mutationFn: async (newBudgetAmount: number) => {
+      if (!budgetId) throw new Error("Budget ID not found.");
+      return updateBudget(Number(budgetId), newBudgetAmount);
+    },
+  });
+  if (isLoading || isFetching) {
+    return <Loading name={category} />;
+  }
   if (!budgetEntry) {
     return <Typography>No budget found for {category}</Typography>;
   }
@@ -51,27 +54,15 @@ export default function BudgetCategoryPage() {
 
   const budgetUsagePercentage =
     budgetedAmount > 0
-      ? Math.min(((spentAmount ?? 0) / budgetedAmount) * 100, 100)
+      ? Math.min(((spentAmount || 0) / budgetedAmount) * 100, 100)
       : 0;
 
   const relevantTx: Transaction[] = transactions.filter(
-    (t) => t.category?.toLowerCase() === category
+    (t) => t.category && t.category.toLowerCase() === category
   );
 
   // State for updating budget amount
   const [newBudget, setNewBudget] = useState<number>(budgetedAmount);
-
-  // Mutation to update budget
-  const updateBudgetMutation = useMutation({
-    mutationFn: async (newBudgetAmount: number) => {
-      if (!budgetId) throw new Error("Budget ID not found.");
-      return updateBudget(Number(budgetId), newBudgetAmount);
-    },
-  });
-
-  if (isLoading || isFetching) {
-    return <Loading name={category} />;
-  }
 
   return (
     <Box sx={{ maxWidth: 900, mx: "auto", p: 2 }}>

@@ -183,7 +183,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         costOfLivingByState,
         isLoading:
           isTransactionsLoading || isBudgetsLoading || isCostOfLivingLoading,
-        isFetching: isTransactionsFetching || isBudgetsFetching,
+        isFetching:
+          isTransactionsFetching ||
+          isBudgetsFetching ||
+          isCostOfLivingStatesLoading,
       }}
     >
       {children}
