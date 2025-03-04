@@ -1,3 +1,5 @@
+"use client";
+
 import Trends from "../components/Trends";
 
 function TrendsPage() {

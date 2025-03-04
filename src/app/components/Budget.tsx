@@ -19,6 +19,7 @@ import {
   FitnessCenter,
   Apartment,
   Edit,
+  ArrowBack,
 } from "@mui/icons-material";
 import { useFinance } from "../context/FinanceContext";
 import Loading from "./Loading";
@@ -34,15 +35,11 @@ const CATEGORY_ICONS: { [key: string]: React.ReactNode } = {
   fitness: <FitnessCenter color="success" />,
 };
 
-interface BudgetProps {
-  totalExpenses: { [key: string]: number }; // Expenses per category
-}
-
 const capitalize = (str: string): string => {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
-export default function Budget({ totalExpenses }: BudgetProps) {
+export default function Budget() {
   const { categoryBudgets, isLoading, isFetching } = useFinance(); // ✅ Get budgets from FinanceContext
 
   if (isLoading || isFetching) {
@@ -51,11 +48,17 @@ export default function Budget({ totalExpenses }: BudgetProps) {
 
   return (
     <Box sx={{ maxWidth: 800, mx: "auto", p: 2 }}>
-      <Typography textAlign="center" fontSize={32} variant="h2" gutterBottom>
+      <Typography
+        mb={4}
+        textAlign="center"
+        fontSize={32}
+        variant="h2"
+        gutterBottom
+      >
         Category-Specific Budgeting
       </Typography>
 
-      {Object.keys(totalExpenses).length === 0 ? (
+      {categoryBudgets.length === 0 ? (
         <Typography>No expenses recorded yet.</Typography>
       ) : (
         <Box
@@ -63,27 +66,28 @@ export default function Budget({ totalExpenses }: BudgetProps) {
           gridTemplateColumns="repeat(auto-fill, minmax(280px, 1fr))"
           gap={2}
         >
-          {Object.keys(totalExpenses).map((category) => {
-            const spent = totalExpenses[category] || 0;
-            const budget =
-              categoryBudgets.find((c) => c.category === category)
-                ?.budgetedAmount ?? 0; // ✅ Use global `categoryBudgets`
+          {categoryBudgets.map((category) => {
+            const spent = category.spentAmount ?? 0;
+            const budget = category.budgetedAmount ?? 0; // ✅ Use global `categoryBudgets`
             const remaining = budget - spent;
             const percentageSpent = Math.min(
               (spent / (budget || 1)) * 100,
               100
             );
-            const tooltipText = `Click for a more in-depth look at your ${category} spending.`;
+            const tooltipText = `Click to view your ${category.category} spending and make budgeting adjustments.`;
 
             return (
-              <Card key={category} sx={{ px: 2 }} variant="outlined">
+              <Card key={category.id} sx={{ px: 2 }} variant="outlined">
                 <CardContent>
                   <Box display="flex" alignItems="center" gap={1}>
-                    {CATEGORY_ICONS[category] || <Home />} {/* Default icon */}
-                    <Typography variant="h6">{capitalize(category)}</Typography>
+                    {CATEGORY_ICONS[category.category] || <Home />}{" "}
+                    {/* Default icon */}
+                    <Typography variant="h6">
+                      {capitalize(category.category)}
+                    </Typography>
                     <Link
-                      key={category}
-                      href={`/budget/${category}`}
+                      key={category.id}
+                      href={`/budget/${category.category}`}
                       passHref
                       style={{
                         textDecoration: "none",
@@ -91,7 +95,11 @@ export default function Budget({ totalExpenses }: BudgetProps) {
                         marginLeft: "auto",
                       }}
                     >
-                      <Tooltip title={tooltipText} arrow placement="right">
+                      <Tooltip
+                        title={<p style={{ fontSize: 14 }}>{tooltipText}</p>}
+                        arrow
+                        placement="right"
+                      >
                         <IconButton>
                           <Edit />
                         </IconButton>

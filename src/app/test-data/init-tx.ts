@@ -9,14 +9,7 @@ export const initialTransactions: Transaction[] = [
     date: "2024-01-01",
     type: "Income",
   },
-  {
-    id: 2,
-    name: "Rent",
-    amount: -1200,
-    category: "Housing",
-    date: "2024-01-03",
-    type: "Expense",
-  },
+
   {
     id: 3,
     name: "Groceries",

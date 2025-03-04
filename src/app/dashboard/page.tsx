@@ -126,14 +126,5 @@ export default function DashboardPage() {
     ],
   };
 
-  return (
-    <Dashboard
-      totalBalance={totalBalance}
-      totalIncome={totalIncome}
-      totalExpenses={totalExpenses}
-      chartData={chartData}
-      barData={barData}
-      lineData={lineData}
-    />
-  );
+  return <Dashboard />;
 }

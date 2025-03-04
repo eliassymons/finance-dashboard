@@ -1,32 +1,30 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  ReactNode,
-  useEffect,
-} from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createContext, useContext, ReactNode } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BudgetEntry, Transaction } from "../types/transaction";
-import { useFetchData } from "../hooks/useFetchData";
 
 const API_TRANSACTIONS = process.env.NEXT_PUBLIC_API_TRANSACTIONS as string;
 const API_BUDGETS = process.env.NEXT_PUBLIC_API_BUDGETS as string;
+const API_COST_OF_LIVING = process.env.NEXT_PUBLIC_API_COST_OF_LIVING as string;
+const API_COST_OF_LIVING_STATES = process.env
+  .NEXT_PUBLIC_API_COST_OF_LIVING_STATES as string;
 
 // Define types for the context state
 interface FinanceContextType {
   transactions: Transaction[];
-  addTransaction: (transaction: Omit<Transaction, "id">) => void;
   categoryBudgets: BudgetEntry[];
-  setCategoryBudgets: React.Dispatch<React.SetStateAction<BudgetEntry[]>>;
-  deleteTransaction: (id: number) => void;
+  updateBudget: (budgetId: number, newBudgetAmount: number) => void;
   totalIncome: number;
   totalExpenses: number;
   totalBalance: number;
   categoryTotals: { [key: string]: number };
-  isLoading: boolean; // ✅ New: Loading state
+  costOfLivingData: { year: number; index: number }[];
+  costOfLivingByState: any;
+  isLoading: boolean;
   isFetching: boolean;
+  addTransaction: (transaction: Omit<Transaction, "id">) => void;
+  deleteTransaction: (id: number | string) => void;
 }
 
 // Create the context
@@ -35,32 +33,64 @@ const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 export function FinanceProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
 
-  const [categoryBudgets, setCategoryBudgets] = useState<BudgetEntry[]>([]);
-
-  // ✅ Fetch transactions using useFetchData
+  // ✅ Fetch Transactions
   const {
     data: transactions = [],
-    error: transactionsError,
     isLoading: isTransactionsLoading,
-    isFetching: isTransactionsFetching, // ✅ Capture loading state
-  } = useFetchData(API_TRANSACTIONS);
-
-  // ✅ Fetch budgets using useFetchData
-  const {
-    data: budgets = [],
-    error: budgetsError,
-    isLoading: isBudgetsLoading,
-    isFetching: isBudgetsFetching, // ✅ Capture loading state
-  } = useFetchData(API_BUDGETS);
-
-  // ✅ Transform budgets into an object (e.g., { food: 200, rent: 1000 })
-  useEffect(() => {
-    if (budgets.length > 0) {
-      setCategoryBudgets(budgets); // ✅ Store full budget objects, not just numbers
-    }
+    isFetching: isTransactionsFetching,
+  } = useQuery({
+    queryKey: [API_TRANSACTIONS],
+    queryFn: () => fetch(API_TRANSACTIONS).then((res) => res.json()),
+    staleTime: 5 * 60 * 1000,
   });
 
-  // ✅ Mutation for adding a new transaction
+  // ✅ Fetch Cost of Living Data (by State)
+  const {
+    data: costOfLivingByState = [],
+    isLoading: isCostOfLivingStatesLoading,
+  } = useQuery({
+    queryKey: [API_COST_OF_LIVING_STATES],
+    queryFn: () => fetch(API_COST_OF_LIVING_STATES).then((res) => res.json()),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // ✅ Fetch Budgets
+  const {
+    data: budgets = [],
+    isLoading: isBudgetsLoading,
+    isFetching: isBudgetsFetching,
+  } = useQuery({
+    queryKey: [API_BUDGETS],
+    queryFn: () => fetch(API_BUDGETS).then((res) => res.json()),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // ✅ Fetch Cost of Living Data
+  const { data: costOfLivingData = [], isLoading: isCostOfLivingLoading } =
+    useQuery({
+      queryKey: [API_COST_OF_LIVING],
+      queryFn: () => fetch(API_COST_OF_LIVING).then((res) => res.json()),
+      staleTime: 5 * 60 * 1000,
+    });
+
+  // ✅ Compute category totals (to track how much was spent per category)
+  const categoryTotals = transactions.reduce(
+    (acc: { [key: string]: number }, tx: Transaction) => {
+      if (tx.type === "Expense") {
+        const category = tx.category.trim().toLowerCase();
+        acc[category] = (acc[category] || 0) + Math.abs(tx.amount);
+      }
+      return acc;
+    },
+    {}
+  );
+
+  // ✅ Compute categoryBudgets
+  const categoryBudgets = budgets.map((budget: BudgetEntry) => ({
+    ...budget,
+    spentAmount: categoryTotals[budget.category.toLowerCase()] || 0, // ✅ Ensure spentAmount is accurate
+  }));
+
   const addTransactionMutation = useMutation({
     mutationFn: async (transaction: Omit<Transaction, "id">) => {
       const response = await fetch(API_TRANSACTIONS, {
@@ -69,14 +99,11 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(transaction),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to add transaction");
-      }
-
+      if (!response.ok) throw new Error("Failed to add transaction");
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [API_TRANSACTIONS] });
+      queryClient.invalidateQueries({ queryKey: [API_TRANSACTIONS] }); // ✅ Trigger refetch
     },
   });
 
@@ -86,77 +113,76 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const deleteTransactionMutation = useMutation({
     mutationFn: async (transactionId: number | string) => {
-      const formattedId = String(transactionId); // ✅ Ensure ID is always a string
-      const deleteUrl = `${API_TRANSACTIONS}/${formattedId}`;
+      const deleteUrl = `${API_TRANSACTIONS}/${transactionId}`;
+      const response = await fetch(deleteUrl, { method: "DELETE" });
 
-      console.log("Attempting to delete transaction:", formattedId);
-      console.log("DELETE request URL:", deleteUrl);
-
-      const response = await fetch(deleteUrl, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        console.error(
-          "Delete request failed:",
-          response.status,
-          response.statusText
-        );
-        throw new Error(`Failed to delete transaction: ${response.statusText}`);
-      }
-
-      return formattedId;
+      if (!response.ok) throw new Error(`Failed to delete transaction`);
+      return transactionId;
     },
-    onSuccess: (transactionId) => {
-      console.log("Transaction deleted successfully:", transactionId);
-      queryClient.invalidateQueries({ queryKey: [API_TRANSACTIONS] });
-    },
-    onError: (error) => {
-      console.error("Error deleting transaction:", error);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [API_TRANSACTIONS] }); // ✅ Trigger refetch
     },
   });
 
   const deleteTransaction = (transactionId: number | string) => {
-    deleteTransactionMutation.mutate(String(transactionId)); // ✅ Always send string ID
+    deleteTransactionMutation.mutate(transactionId);
   };
 
-  const totalIncome =
-    transactions
-      .filter((tx: Transaction) => tx.type === "Income")
-      .reduce((acc: number, tx: Transaction) => acc + tx.amount, 0) || 0;
+  const updateBudgetMutation = useMutation({
+    mutationFn: async ({
+      budgetId,
+      newBudgetAmount,
+    }: {
+      budgetId: number;
+      newBudgetAmount: number;
+    }) => {
+      const response = await fetch(`${API_BUDGETS}/${budgetId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ budgetedAmount: newBudgetAmount }),
+      });
 
-  const totalExpenses =
-    transactions
-      .filter((tx: Transaction) => tx.type === "Expense")
-      .reduce((acc: number, tx: Transaction) => acc + tx.amount, 0) || 0;
-
-  const totalBalance = totalIncome - Math.abs(totalExpenses);
-
-  const categoryTotals = transactions.reduce(
-    (acc: { [key: string]: number }, tx: Transaction) => {
-      if (tx.type === "Expense") {
-        const cleanCategory = tx.category.trim()?.toLowerCase();
-        acc[cleanCategory] = (acc[cleanCategory] || 0) + Math.abs(tx.amount);
-      }
-      return acc;
+      if (!response.ok) throw new Error("Failed to update budget");
+      return response.json();
     },
-    {} as { [key: string]: number }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [API_BUDGETS] }); // ✅ Refetch budgets
+    },
+  });
+
+  const updateBudget = (budgetId: number, newBudgetAmount: number) => {
+    updateBudgetMutation.mutate({ budgetId, newBudgetAmount });
+  };
 
   return (
     <FinanceContext.Provider
       value={{
         transactions,
         addTransaction,
-        categoryBudgets,
-        setCategoryBudgets,
         deleteTransaction,
-        totalIncome,
-        totalExpenses,
-        totalBalance,
+        categoryBudgets,
+        updateBudget,
+        totalIncome: (transactions as Transaction[])
+          .filter((tx) => tx.type === "Income")
+          .reduce((acc, tx) => acc + tx.amount, 0),
+        totalExpenses:
+          (transactions as Transaction[])
+            .filter((tx) => tx.type === "Expense")
+            .reduce((acc, tx) => acc + Math.abs(tx.amount), 0) * -1,
+
+        totalBalance:
+          (transactions as Transaction[])
+            .filter((tx) => tx.type === "Income")
+            .reduce((acc, tx) => acc + tx.amount, 0) +
+          (transactions as Transaction[])
+            .filter((tx) => tx.type === "Expense")
+            .reduce((acc, tx) => acc - Math.abs(tx.amount), 0), // ✅ Add negative expenses
+
         categoryTotals,
-        isLoading: isTransactionsLoading || isBudgetsLoading,
-        // ✅ Expose loading state
+        costOfLivingData,
+        costOfLivingByState,
+        isLoading:
+          isTransactionsLoading || isBudgetsLoading || isCostOfLivingLoading,
         isFetching: isTransactionsFetching || isBudgetsFetching,
       }}
     >
@@ -171,5 +197,6 @@ export function useFinance() {
   if (!context) {
     throw new Error("useFinance must be used within a FinanceProvider");
   }
+
   return context;
 }

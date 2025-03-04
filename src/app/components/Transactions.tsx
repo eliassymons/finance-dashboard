@@ -37,6 +37,7 @@ import {
 import { useFinance } from "../context/FinanceContext"; // ✅ Import useFinance
 import zIndex from "@mui/material/styles/zIndex";
 import Loading from "./Loading";
+import EmptyDisplay from "./Empty";
 
 // 🔹 Expense Categories
 const EXPENSE_CATEGORIES = [
@@ -45,7 +46,6 @@ const EXPENSE_CATEGORIES = [
   "Entertainment",
   "Utilities",
   "Fitness",
-  "Housing",
   "Rent",
 ];
 
@@ -54,7 +54,6 @@ const CATEGORY_ICONS: { [key: string]: React.ElementType } = {
   Food: Fastfood,
   Transportation: DirectionsBus,
   Entertainment: Movie,
-  Shopping: ShoppingBag,
   Utilities: Home,
   Fitness: FitnessCenter,
   Rent: Payment,
@@ -74,11 +73,27 @@ export default function Transactions() {
     name: "",
     amount: "",
     category: "",
-    date: "",
+    date: new Date().toISOString().split("T")[0],
     type: "Expense",
   });
 
   const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [dateError, setDateError] = useState(""); // State for validation error
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedDate = e.target.value;
+    const today = new Date().toISOString().split("T")[0]; // Get today's date
+
+    if (selectedDate > today) {
+      setDateError("Date cannot be in the future.");
+    } else if (selectedDate < "2023-01-01") {
+      setDateError("Date must be after January 1, 2023.");
+    } else {
+      setDateError(""); // Clear error if valid
+    }
+
+    setForm({ ...form, date: selectedDate });
+  };
 
   // ✅ Handle Loading/Error States
   if (isLoading || isFetching) {
@@ -137,13 +152,11 @@ export default function Transactions() {
         flexWrap="wrap-reverse"
       >
         {/* 🔹 Transaction List */}
-        <Paper sx={{ p: 2, flex: 1, maxWidth: 400, minWidth: 350 }}>
+        <Paper sx={{ p: 2, flex: 1, maxWidth: 400, minWidth: 340 }}>
           <Typography variant="h6">Recent Transactions</Typography>
           <List>
             {sortedTransactions.length === 0 ? (
-              <Typography sx={{ textAlign: "center", mt: 2 }}>
-                No transactions yet.
-              </Typography>
+              <EmptyDisplay type="transaction"></EmptyDisplay>
             ) : (
               sortedTransactions.slice(0, 10).map((tx) => {
                 const IconComponent =
@@ -187,7 +200,7 @@ export default function Transactions() {
         <Box
           flex={1}
           maxWidth={400}
-          minWidth={350}
+          minWidth={340}
           component="form"
           onSubmit={handleAddTransaction}
         >
@@ -233,7 +246,14 @@ export default function Transactions() {
             </Box>
 
             {/* 🔹 Show Category Dropdown ONLY for Expenses */}
-            <Tooltip arrow title={categoryFormTooltip} placement="bottom">
+            <Tooltip
+              disableHoverListener={form.type === "Expense"}
+              disableFocusListener={form.type === "Expense"}
+              disableTouchListener={form.type === "Expense"}
+              arrow
+              title={categoryFormTooltip}
+              placement="bottom"
+            >
               <FormControl
                 disabled={form.type === "Income"}
                 fullWidth
@@ -263,10 +283,19 @@ export default function Transactions() {
               label="Date"
               type="date"
               InputLabelProps={{ shrink: true }}
+              slotProps={{
+                htmlInput: {
+                  max: new Date().toISOString().split("T")[0], // Limit max to today
+                  min: "2023-01-01", // Optional: Set a minimum date
+                },
+              }}
               value={form.date}
-              onChange={(e) => setForm({ ...form, date: e.target.value })}
+              onChange={handleDateChange}
+              error={!!dateError}
+              helperText={dateError}
               required
             />
+
             <Button disabled={!isFormValid} variant="contained" type="submit">
               Add Transaction
             </Button>

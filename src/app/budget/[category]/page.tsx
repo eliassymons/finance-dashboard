@@ -15,11 +15,14 @@ import {
   TextField,
   Button,
   CircularProgress,
+  IconButton,
 } from "@mui/material";
-import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import Loading from "../../components/Loading";
 import { Transaction } from "@/app/types/transaction";
+import Link from "next/link";
+import { ArrowBack } from "@mui/icons-material";
 
 export default function BudgetCategoryPage() {
   const params = useParams();
@@ -31,83 +34,61 @@ export default function BudgetCategoryPage() {
     categoryTotals,
     transactions,
     categoryBudgets,
-    setCategoryBudgets,
+    updateBudget,
     isLoading,
     isFetching,
   } = useFinance();
-  const queryClient = useQueryClient();
+
+  // ✅ Get category budget directly from context
+  const budgetEntry = categoryBudgets.find(
+    (b) => b.category.toLowerCase() === category
+  );
+
+  if (!budgetEntry) {
+    return <Typography>No budget found for {category}</Typography>;
+  }
+
+  const { id: budgetId, budgetedAmount, spentAmount } = budgetEntry;
+
+  const remainingBudget = budgetedAmount - (spentAmount ?? 0);
+  const budgetUsagePercentage =
+    budgetedAmount > 0
+      ? Math.min(((spentAmount ?? 0) / budgetedAmount) * 100, 100)
+      : 0;
 
   const relevantTx: Transaction[] = transactions.filter(
     (t) => t.category?.toLowerCase() === category
   );
 
-  const totalSpent = categoryTotals[category] || 0;
-  const budgetedAmount =
-    categoryBudgets.find((c) => c.category === category)?.budgetedAmount ?? 0;
-  const remainingBudget = budgetedAmount - totalSpent;
-  const budgetUsagePercentage =
-    budgetedAmount > 0 ? Math.min((totalSpent / budgetedAmount) * 100, 100) : 0;
-
-  // ✅ State for user input when adjusting the budget
+  // ✅ State for updating budget amount
   const [newBudget, setNewBudget] = useState<number>(budgetedAmount);
-  const API_BUDGETS = process.env.NEXT_PUBLIC_API_BUDGETS as string; // ✅ Load API URL
 
+  // ✅ Mutation to update budget
   const updateBudgetMutation = useMutation({
     mutationFn: async (newBudgetAmount: number) => {
-      const budgetEntry = categoryBudgets.find(
-        (entry) => entry.category.toLowerCase() === category
-      );
-      if (!budgetEntry || !budgetEntry.id) {
-        console.error("Budget ID not found for category:", category);
-        throw new Error("Budget ID not found.");
-      }
-
-      const budgetId = budgetEntry.id;
-
-      const response = await fetch(`${API_BUDGETS}/${budgetId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`,
-        },
-        body: JSON.stringify({ budgetedAmount: newBudgetAmount }),
-      });
-
-      if (!response.ok) {
-        console.error("Response Error:", response.status, response.statusText);
-        throw new Error("Failed to update budget");
-      }
-
-      const updatedBudget = await response.json();
-      return updatedBudget;
-    },
-    onSuccess: (updatedBudget) => {
-      setCategoryBudgets((prevBudgets) =>
-        prevBudgets.map((b) =>
-          b.id === updatedBudget.id
-            ? { ...b, budgetedAmount: updatedBudget.budgetedAmount }
-            : b
-        )
-      );
-
-      // ✅ Invalidate query so Next.js refetches fresh data
-      queryClient.invalidateQueries({ queryKey: [API_BUDGETS] });
+      if (!budgetId) throw new Error("Budget ID not found.");
+      return updateBudget(Number(budgetId), newBudgetAmount);
     },
   });
 
   if (isLoading || isFetching) {
-    return <Loading name={(params.category as string) ?? ""} />;
+    return <Loading name={category} />;
   }
 
   return (
     <Box sx={{ maxWidth: 900, mx: "auto", p: 2 }}>
-      <Typography fontSize={32} variant="h2" gutterBottom textAlign={"center"}>
+      <Link href={"/budget"}>
+        <IconButton sx={{ position: "absolute" }}>
+          <ArrowBack fontSize="large" />
+        </IconButton>
+      </Link>
+      <Typography fontSize={32} variant="h2" gutterBottom textAlign="center">
         {category.charAt(0).toUpperCase() + category.slice(1)} Spending
       </Typography>
 
       <Divider sx={{ my: 2 }} />
 
-      {/* ✅ Insights Row */}
+      {/* ✅ Budget Insights */}
       <Box
         sx={{
           display: "flex",
@@ -132,12 +113,12 @@ export default function BudgetCategoryPage() {
         >
           <Typography variant="h6">Total Spent</Typography>
           <Typography fontSize={30} fontWeight={600} color="error">
-            ${totalSpent.toFixed(2)}
+            ${(spentAmount ?? 0).toFixed(2)}
           </Typography>
         </Paper>
       </Box>
 
-      {/* ✅ Circular Progress Bar for Budget Usage */}
+      {/* ✅ Budget Progress */}
       <Box
         sx={{
           my: 4,
@@ -156,7 +137,8 @@ export default function BudgetCategoryPage() {
             size={140}
             thickness={8}
             sx={{
-              color: totalSpent > budgetedAmount ? "#D32F2F" : "#4CAF50",
+              color:
+                (spentAmount ?? 0) > budgetedAmount ? "#D32F2F" : "#4CAF50",
             }}
           />
           <Box
@@ -171,11 +153,7 @@ export default function BudgetCategoryPage() {
               justifyContent: "center",
             }}
           >
-            <Typography
-              variant="h6"
-              component="div"
-              color={totalSpent > budgetedAmount ? "error" : "primary"}
-            >
+            <Typography variant="h6" component="div" color="primary">
               {budgetUsagePercentage.toFixed(1)}%
             </Typography>
           </Box>
