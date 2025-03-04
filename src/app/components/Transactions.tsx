@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useState } from "react";
 import {
   Box,
   Button,
@@ -20,7 +20,6 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Tooltip,
-  CircularProgress,
   IconButton,
 } from "@mui/material";
 import {
@@ -30,16 +29,15 @@ import {
   Home,
   Movie,
   Payment,
-  ShoppingBag,
   AttachMoney,
   Delete,
 } from "@mui/icons-material";
-import { useFinance } from "../context/FinanceContext"; // ✅ Import useFinance
+import { useFinance } from "../context/FinanceContext";
 import zIndex from "@mui/material/styles/zIndex";
 import Loading from "./Loading";
 import EmptyDisplay from "./Empty";
 
-// 🔹 Expense Categories
+// Expense Categories
 const EXPENSE_CATEGORIES = [
   "Food",
   "Transportation",
@@ -49,7 +47,7 @@ const EXPENSE_CATEGORIES = [
   "Rent",
 ];
 
-// 🔹 Category Icons
+// Category Icons
 const CATEGORY_ICONS: { [key: string]: React.ElementType } = {
   Food: Fastfood,
   Transportation: DirectionsBus,
@@ -57,7 +55,7 @@ const CATEGORY_ICONS: { [key: string]: React.ElementType } = {
   Utilities: Home,
   Fitness: FitnessCenter,
   Rent: Payment,
-  Income: AttachMoney, // ✅ Default icon for income transactions
+  Income: AttachMoney, // Default icon for income transactions
 };
 const categoryFormTooltip = "Only expenses are categorized.";
 
@@ -95,7 +93,7 @@ export default function Transactions() {
     setForm({ ...form, date: selectedDate });
   };
 
-  // ✅ Handle Loading/Error States
+  // Handle Loading/Error States
   if (isLoading || isFetching) {
     return <Loading name={"Transactions"} />;
   }
@@ -151,7 +149,7 @@ export default function Transactions() {
         p={2}
         flexWrap="wrap-reverse"
       >
-        {/* 🔹 Transaction List */}
+        {/*  Transaction List */}
         <Paper sx={{ p: 2, flex: 1, maxWidth: 400, minWidth: 340 }}>
           <Typography variant="h6">Recent Transactions</Typography>
           <List>
@@ -196,7 +194,7 @@ export default function Transactions() {
           </List>
         </Paper>
 
-        {/* 🔹 Transaction Form */}
+        {/* Transaction Form */}
         <Box
           flex={1}
           maxWidth={400}
@@ -223,7 +221,7 @@ export default function Transactions() {
                 onChange={(e) => setForm({ ...form, amount: e.target.value })}
                 required
               />
-              {/* 🔹 Income/Expense Toggle */}
+              {/* Income/Expense Toggle */}
               <ToggleButtonGroup
                 value={form.type}
                 exclusive
@@ -245,7 +243,7 @@ export default function Transactions() {
               </ToggleButtonGroup>
             </Box>
 
-            {/* 🔹 Show Category Dropdown ONLY for Expenses */}
+            {/*  Show Category Dropdown ONLY for Expenses */}
             <Tooltip
               disableHoverListener={form.type === "Expense"}
               disableFocusListener={form.type === "Expense"}
@@ -285,8 +283,8 @@ export default function Transactions() {
               InputLabelProps={{ shrink: true }}
               slotProps={{
                 htmlInput: {
-                  max: new Date().toISOString().split("T")[0], // Limit max to today
-                  min: "2023-01-01", // Optional: Set a minimum date
+                  max: new Date().toISOString().split("T")[0],
+                  min: "2023-01-01",
                 },
               }}
               value={form.date}

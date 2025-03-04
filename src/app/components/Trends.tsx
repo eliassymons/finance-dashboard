@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Container,
-  Typography,
-  Paper,
-  CircularProgress,
-  Box,
-} from "@mui/material";
+import { Container, Typography, Paper, Box } from "@mui/material";
 import { Line } from "react-chartjs-2";
 import { useFinance } from "../context/FinanceContext";
 import "chartjs-adapter-date-fns";
@@ -24,7 +18,6 @@ import {
 import USMap from "./USMap";
 import Loading from "./Loading";
 
-// ✅ Register Chart.js components
 ChartJS.register(
   LineElement,
   PointElement,
@@ -39,7 +32,6 @@ ChartJS.register(
 export default function Trends() {
   const { costOfLivingData, costOfLivingByState, isLoading } = useFinance();
 
-  // ✅ Transform Cost of Living Data (Line Chart)
   const costOfLivingChartData = {
     labels: costOfLivingData.map((entry) => entry.year),
     datasets: [
@@ -72,24 +64,23 @@ export default function Trends() {
         Cost of Living Trends
       </Typography>
 
-      {/* ✅ Switch Back to `flexbox` */}
       <Box
         sx={{
           display: "flex",
-          flexDirection: { xs: "column", md: "row" }, // ✅ Column on mobile, row on larger screens
+          flexDirection: { xs: "column", md: "row" },
           gap: 3,
           alignItems: "stretch",
         }}
       >
-        {/* ✅ Cost of Living Map (Shrinks More Evenly) */}
+        {/* COL map */}
         <Paper
           sx={{
             p: 3,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            flex: "1 1 400px", // ✅ Allows the map to shrink but not disappear
-            minWidth: "300px", // ✅ Prevents it from shrinking too much
+            flex: "1 1 400px",
+            minWidth: "300px",
           }}
           variant="outlined"
         >
@@ -105,14 +96,14 @@ export default function Trends() {
           </Box>
         </Paper>
 
-        {/* ✅ Cost of Living Over Time (Now Shrinks Better) */}
+        {/* COL over time */}
         <Paper
           sx={{
             p: 3,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            flex: "1 1 400px", // ✅ Takes more space but still shrinks
+            flex: "1 1 400px",
           }}
           variant="outlined"
         >

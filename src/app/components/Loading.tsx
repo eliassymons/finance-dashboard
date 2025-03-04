@@ -11,8 +11,8 @@ function Loading({ name }: { name: string }) {
       display="flex"
       justifyContent="center"
       alignItems="center"
-      bgcolor="rgba(255, 255, 255, 0.8)" // ✅ Semi-transparent overlay effect
-      zIndex={9999} // ✅ Ensures it appears immediately over everything
+      bgcolor="rgba(255, 255, 255, 0.8)"
+      zIndex={9999}
     >
       <Fade in timeout={100}>
         <Box

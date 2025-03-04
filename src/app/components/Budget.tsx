@@ -19,7 +19,6 @@ import {
   FitnessCenter,
   Apartment,
   Edit,
-  ArrowBack,
 } from "@mui/icons-material";
 import { useFinance } from "../context/FinanceContext";
 import Loading from "./Loading";
@@ -40,7 +39,7 @@ const capitalize = (str: string): string => {
 };
 
 export default function Budget() {
-  const { categoryBudgets, isLoading, isFetching } = useFinance(); // ✅ Get budgets from FinanceContext
+  const { categoryBudgets, isLoading, isFetching } = useFinance(); //  Get budgets from FinanceContext
 
   if (isLoading || isFetching) {
     return <Loading name="Budgets" />;
@@ -68,7 +67,7 @@ export default function Budget() {
         >
           {categoryBudgets.map((category) => {
             const spent = category.spentAmount ?? 0;
-            const budget = category.budgetedAmount ?? 0; // ✅ Use global `categoryBudgets`
+            const budget = category.budgetedAmount ?? 0;
             const remaining = budget - spent;
             const percentageSpent = Math.min(
               (spent / (budget || 1)) * 100,

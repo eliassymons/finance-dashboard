@@ -6,7 +6,7 @@ import "leaflet/dist/leaflet.css";
 import { scaleSequential } from "d3-scale";
 import { interpolateReds } from "d3-scale-chromatic";
 
-// ✅ Dynamically import react-leaflet components
+// Next gets mad if we don't dynamically import
 const MapContainer = dynamic(
   () => import("react-leaflet").then((mod) => mod.MapContainer),
   { ssr: false }
@@ -32,7 +32,7 @@ interface USMapProps {
 
 export default function USMap({ costOfLivingData }: USMapProps) {
   const [geoData, setGeoData] = useState<any>(null);
-  const [mapKey, setMapKey] = useState(Date.now()); // 🔥 Forces map re-creation on refresh
+  const [mapKey, setMapKey] = useState(Date.now());
 
   useEffect(() => {
     async function fetchGeoJSON() {
@@ -47,7 +47,7 @@ export default function USMap({ costOfLivingData }: USMapProps) {
 
   useEffect(() => {
     return () => {
-      setMapKey(Date.now()); // 🔥 Reset key to force re-mount
+      setMapKey(Date.now());
     };
   }, []);
 
@@ -97,7 +97,7 @@ export default function USMap({ costOfLivingData }: USMapProps) {
 
   return (
     <MapContainer
-      key={mapKey} // 🔥 This ensures the map is fully recreated on hot reloads
+      key={mapKey}
       center={center}
       zoom={3}
       style={{ height: "400px", width: "100%", maxWidth: "600px" }}
@@ -115,7 +115,7 @@ export default function USMap({ costOfLivingData }: USMapProps) {
           color: "white",
           fillOpacity: 0.7,
         })}
-        onEachFeature={onEachFeature} // ✅ Adds tooltips back!
+        onEachFeature={onEachFeature}
       />
     </MapContainer>
   );

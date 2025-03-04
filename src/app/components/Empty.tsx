@@ -21,7 +21,7 @@ export default function EmptyDisplay({
         height: "100%",
         width: "100%",
         textAlign: "center",
-        bgcolor: "light-gray", // Light gray background
+        bgcolor: "light-gray",
         borderRadius: 2,
         p: 3,
       }}

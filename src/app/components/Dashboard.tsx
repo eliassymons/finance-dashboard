@@ -27,7 +27,7 @@ export default function Dashboard() {
     totalIncome,
     totalExpenses,
     categoryTotals,
-    transactions, // ✅ Get transactions for bar & line charts
+    transactions,
     isLoading,
     isFetching,
   } = useFinance();
@@ -36,7 +36,7 @@ export default function Dashboard() {
     return <Loading name="Dashboard" />;
   }
 
-  // ✅ Doughnut Chart: Expense Breakdown
+  // Doughnut Chart: Expense Breakdown
   const expenseCategories = Object.keys(categoryTotals).map((c) =>
     capitalize(c)
   );
@@ -64,7 +64,7 @@ export default function Dashboard() {
     ],
   };
 
-  // ✅ Bar Chart: Monthly Spending Trends
+  //  Bar Chart: Monthly Spending Trends
   const monthlyTotals = transactions.reduce((acc, tx) => {
     if (tx.type === "Expense") {
       const month = new Date(tx.date).toLocaleString("default", {
@@ -86,7 +86,7 @@ export default function Dashboard() {
     ],
   };
 
-  // ✅ Line Chart: Spending Over Time (by Week)
+  //  Line Chart: Spending Over Time (by Week)
   const weeklyTotals = transactions.reduce((acc, tx) => {
     if (tx.type === "Expense") {
       const weekNumber = Math.ceil(new Date(tx.date).getDate() / 7);
@@ -127,7 +127,7 @@ export default function Dashboard() {
         Your Finances, At a Glance
       </Typography>
 
-      {/* 🔹 Summary Cards */}
+      {/*  Summary Cards */}
       <Box
         display="flex"
         flexWrap="wrap"
@@ -218,7 +218,7 @@ export default function Dashboard() {
         </Card>
       </Box>
 
-      {/* 🔹 Charts Section */}
+      {/* Charts Section */}
       <Box
         sx={{
           display: "grid",

@@ -39,7 +39,6 @@ export default function BudgetCategoryPage() {
     isFetching,
   } = useFinance();
 
-  // ✅ Get category budget directly from context
   const budgetEntry = categoryBudgets.find(
     (b) => b.category.toLowerCase() === category
   );
@@ -50,7 +49,6 @@ export default function BudgetCategoryPage() {
 
   const { id: budgetId, budgetedAmount, spentAmount } = budgetEntry;
 
-  const remainingBudget = budgetedAmount - (spentAmount ?? 0);
   const budgetUsagePercentage =
     budgetedAmount > 0
       ? Math.min(((spentAmount ?? 0) / budgetedAmount) * 100, 100)
@@ -60,10 +58,10 @@ export default function BudgetCategoryPage() {
     (t) => t.category?.toLowerCase() === category
   );
 
-  // ✅ State for updating budget amount
+  // State for updating budget amount
   const [newBudget, setNewBudget] = useState<number>(budgetedAmount);
 
-  // ✅ Mutation to update budget
+  // Mutation to update budget
   const updateBudgetMutation = useMutation({
     mutationFn: async (newBudgetAmount: number) => {
       if (!budgetId) throw new Error("Budget ID not found.");
@@ -88,7 +86,7 @@ export default function BudgetCategoryPage() {
 
       <Divider sx={{ my: 2 }} />
 
-      {/* ✅ Budget Insights */}
+      {/* Budget Insights */}
       <Box
         sx={{
           display: "flex",
@@ -118,7 +116,7 @@ export default function BudgetCategoryPage() {
         </Paper>
       </Box>
 
-      {/* ✅ Budget Progress */}
+      {/* Budget Progress */}
       <Box
         sx={{
           my: 4,
@@ -160,7 +158,7 @@ export default function BudgetCategoryPage() {
         </Box>
       </Box>
 
-      {/* ✅ Adjust Budget Section */}
+      {/* Adjust Budget Section */}
       <Paper elevation={3} sx={{ p: 2, mb: 3 }} variant="outlined">
         <Typography fontSize={24} variant="h3" gutterBottom>
           Adjust Budget
@@ -184,7 +182,7 @@ export default function BudgetCategoryPage() {
         </Button>
       </Paper>
 
-      {/* ✅ Recent Transactions Table */}
+      {/* Recent Transactions Table */}
       <Paper elevation={0} sx={{ p: 2 }} variant="outlined">
         <Typography fontSize={24} variant="h3" gutterBottom>
           Recent Transactions
