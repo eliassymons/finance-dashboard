@@ -2,7 +2,15 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Container, Typography, Tabs, Tab, Box } from "@mui/material";
+import {
+  Container,
+  Typography,
+  Tabs,
+  Tab,
+  Box,
+  useTheme,
+  useMediaQuery,
+} from "@mui/material";
 import { FinanceProvider } from "./context/FinanceContext";
 import { Roboto } from "next/font/google";
 import { DM_Serif_Display } from "next/font/google";
@@ -23,7 +31,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   // Determine active tab based on the pathname
   const getTabIndex = () => {
     if (pathname.startsWith("/transactions")) return 1;
@@ -31,6 +40,13 @@ export default function RootLayout({
     if (pathname.startsWith("/trends")) return 3;
     return 0; // Default to Dashboard
   };
+
+  const tabs = [
+    { label: "Dashboard", href: "/dashboard" },
+    { label: "Transactions", href: "/transactions" },
+    { label: "Budget", href: "/budget" },
+    { label: "Trends", href: "/trends" },
+  ];
 
   return (
     <html lang="en">
@@ -54,33 +70,28 @@ export default function RootLayout({
               Personal Finance Dashboard
             </Typography>
 
-            {/* ✅ Tabs for Navigation */}
+            {/* Tabs for Navigation */}
             <Box sx={{ borderBottom: 1, borderColor: "divider", mt: 2, mb: 2 }}>
-              <Tabs value={getTabIndex()} centered>
-                <Tab
-                  sx={{ fontWeight: 600 }}
-                  component={Link}
-                  href="/dashboard"
-                  label="Dashboard"
-                />
-                <Tab
-                  sx={{ fontWeight: 600 }}
-                  component={Link}
-                  href="/transactions"
-                  label="Transactions"
-                />
-                <Tab
-                  sx={{ fontWeight: 600 }}
-                  component={Link}
-                  href="/budget"
-                  label="Budget"
-                />
-                <Tab
-                  sx={{ fontWeight: 600 }}
-                  component={Link}
-                  href="/trends"
-                  label="Trends"
-                />
+              <Tabs
+                value={getTabIndex()}
+                variant={isMobile ? "scrollable" : "standard"}
+                scrollButtons={isMobile ? "auto" : false}
+                allowScrollButtonsMobile
+                centered={!isMobile}
+              >
+                {tabs.map((tab) => (
+                  <Tab
+                    key={tab.href}
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: { xs: "12px", sm: "14px", md: "16px" },
+                      minWidth: "auto",
+                    }}
+                    component={Link}
+                    href={tab.href}
+                    label={tab.label}
+                  />
+                ))}
               </Tabs>
             </Box>
 
