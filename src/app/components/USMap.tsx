@@ -1,41 +1,41 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { scaleSequential } from "d3-scale";
 import { interpolateReds } from "d3-scale-chromatic";
-
-// Next gets mad if we don't dynamically import
-const MapContainer = dynamic(
-  () => import("react-leaflet").then((mod) => mod.MapContainer),
-  { ssr: false }
-);
-const TileLayer = dynamic(
-  () => import("react-leaflet").then((mod) => mod.TileLayer),
-  { ssr: false }
-);
-const GeoJSON = dynamic(
-  () => import("react-leaflet").then((mod) => mod.GeoJSON),
-  { ssr: false }
-);
+import {
+  MapContainer as LeafletMap,
+  TileLayer,
+  GeoJSON,
+  GeoJSONProps,
+} from "react-leaflet";
+import { FeatureCollection, Geometry, Feature } from "geojson";
+import { Layer } from "leaflet";
 
 const center: [number, number] = [37.8, -96];
 
+interface CostOfLivingEntry {
+  state: string;
+  index: number;
+}
+
 interface USMapProps {
-  costOfLivingData: { state: string; index: number }[];
+  costOfLivingData: CostOfLivingEntry[];
 }
 
 export default function USMap({ costOfLivingData }: USMapProps) {
-  const [geoData, setGeoData] = useState<any>(null);
-  const [mapKey, setMapKey] = useState(Date.now());
+  const [geoData, setGeoData] = useState<FeatureCollection<Geometry> | null>(
+    null
+  );
+  const [mapKey, setMapKey] = useState<number>(Date.now());
 
   useEffect(() => {
     async function fetchGeoJSON() {
       const response = await fetch(
         "https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json"
       );
-      const data = await response.json();
+      const data: FeatureCollection<Geometry> = await response.json();
       setGeoData(data);
     }
     fetchGeoJSON();
@@ -56,13 +56,18 @@ export default function USMap({ costOfLivingData }: USMapProps) {
     maxIndex,
   ]);
 
-  const getColor = (stateName: string) => {
+  const getColor = (stateName: string): string => {
     const stateData = costOfLivingData.find((d) => d.state === stateName);
     return stateData ? colorScale(stateData.index).toString() : "#ccc";
   };
 
-  const onEachFeature = (feature: any, layer: any) => {
-    const stateName = feature.properties.name;
+  const onEachFeature: GeoJSONProps["onEachFeature"] = (
+    feature: Feature<Geometry, { name: string }>,
+    layer: Layer
+  ) => {
+    const stateName = feature.properties?.name;
+    if (!stateName) return;
+
     const stateData = costOfLivingData.find((d) => d.state === stateName);
 
     if (stateData) {
@@ -92,7 +97,7 @@ export default function USMap({ costOfLivingData }: USMapProps) {
   };
 
   return (
-    <MapContainer
+    <LeafletMap
       key={mapKey}
       center={center}
       zoom={3}
@@ -113,6 +118,6 @@ export default function USMap({ costOfLivingData }: USMapProps) {
         })}
         onEachFeature={onEachFeature}
       />
-    </MapContainer>
+    </LeafletMap>
   );
 }

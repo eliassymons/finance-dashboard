@@ -26,6 +26,7 @@ import { ArrowBack } from "@mui/icons-material";
 
 export default function BudgetCategoryPage() {
   const params = useParams();
+
   const category = Array.isArray(params.category)
     ? params.category[0]
     : params.category || "";
@@ -33,36 +34,45 @@ export default function BudgetCategoryPage() {
   const { transactions, categoryBudgets, updateBudget, isLoading, isFetching } =
     useFinance();
 
+  // Find budget entry
   const budgetEntry = categoryBudgets.find(
     (b) => b.category.toLowerCase() === category
   );
-  // Mutation to update budget
+
+  //  Prevent conditional destructuring
+  const budgetId = budgetEntry?.id ?? "";
+  const budgetedAmount = budgetEntry?.budgetedAmount ?? 0;
+  const spentAmount = budgetEntry?.spentAmount ?? 0;
+
+  //  Always initialize state
+  const [newBudget, setNewBudget] = useState<number>(budgetedAmount);
+
+  //  Always call hooks at the top level
   const updateBudgetMutation = useMutation({
     mutationFn: async (newBudgetAmount: number) => {
-      if (!budgetId) throw new Error("Budget ID not found.");
+      if (!budgetEntry) throw new Error("Budget entry not found.");
       return updateBudget(Number(budgetId), newBudgetAmount);
     },
   });
+
+  //  Check loading before rendering content
   if (isLoading || isFetching) {
     return <Loading name={category} />;
   }
+
+  //  Handle missing budgetEntry safely
   if (!budgetEntry) {
     return <Typography>No budget found for {category}</Typography>;
   }
 
-  const { id: budgetId, budgetedAmount, spentAmount } = budgetEntry;
-
   const budgetUsagePercentage =
     budgetedAmount > 0
-      ? Math.min(((spentAmount || 0) / budgetedAmount) * 100, 100)
+      ? Math.min((spentAmount / budgetedAmount) * 100, 100)
       : 0;
 
   const relevantTx: Transaction[] = transactions.filter(
     (t) => t.category && t.category.toLowerCase() === category
   );
-
-  // State for updating budget amount
-  const [newBudget, setNewBudget] = useState<number>(budgetedAmount);
 
   return (
     <Box sx={{ maxWidth: 900, mx: "auto", p: 2 }}>
@@ -102,7 +112,7 @@ export default function BudgetCategoryPage() {
         >
           <Typography variant="h6">Total Spent</Typography>
           <Typography fontSize={30} fontWeight={600} color="error">
-            ${(spentAmount ?? 0).toFixed(2)}
+            ${spentAmount.toFixed(2)}
           </Typography>
         </Paper>
       </Box>
@@ -126,8 +136,7 @@ export default function BudgetCategoryPage() {
             size={140}
             thickness={8}
             sx={{
-              color:
-                (spentAmount ?? 0) > budgetedAmount ? "#D32F2F" : "#4CAF50",
+              color: spentAmount > budgetedAmount ? "#D32F2F" : "#4CAF50",
             }}
           />
           <Box

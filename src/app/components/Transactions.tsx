@@ -36,6 +36,7 @@ import { useFinance } from "../context/FinanceContext";
 
 import Loading from "./Loading";
 import EmptyDisplay from "./Empty";
+import { Transaction } from "../types/transaction";
 
 // Expense Categories
 const EXPENSE_CATEGORIES = [
@@ -119,7 +120,7 @@ export default function Transactions() {
       type: form.type,
     };
 
-    addTransaction(newTransaction as any); // ✅ Call `addTransaction` mutation
+    addTransaction(newTransaction as Transaction); //  Call `addTransaction` mutation
     setForm({ name: "", amount: "", category: "", date: "", type: "Expense" });
     setOpenSnackbar(true);
   };

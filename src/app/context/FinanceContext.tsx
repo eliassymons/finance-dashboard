@@ -20,11 +20,16 @@ interface FinanceContextType {
   totalBalance: number;
   categoryTotals: { [key: string]: number };
   costOfLivingData: { year: number; index: number }[];
-  costOfLivingByState: any;
+  costOfLivingByState: CostOfLivingState[];
   isLoading: boolean;
   isFetching: boolean;
   addTransaction: (transaction: Omit<Transaction, "id">) => void;
   deleteTransaction: (id: number | string) => void;
+}
+
+interface CostOfLivingState {
+  state: string;
+  index: number;
 }
 
 // Create the context
@@ -44,9 +49,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     staleTime: 5 * 60 * 1000,
   });
 
-  // ✅ Fetch Cost of Living Data (by State)
+  //  Fetch Cost of Living Data (by State)
   const {
-    data: costOfLivingByState = [],
+    data: costOfLivingByState = [] as CostOfLivingState[],
     isLoading: isCostOfLivingStatesLoading,
   } = useQuery({
     queryKey: [API_COST_OF_LIVING_STATES],
@@ -54,7 +59,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     staleTime: 5 * 60 * 1000,
   });
 
-  // ✅ Fetch Budgets
+  //  Fetch Budgets
   const {
     data: budgets = [],
     isLoading: isBudgetsLoading,
@@ -65,7 +70,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     staleTime: 5 * 60 * 1000,
   });
 
-  // ✅ Fetch Cost of Living Data
+  //  Fetch Cost of Living Data
   const { data: costOfLivingData = [], isLoading: isCostOfLivingLoading } =
     useQuery({
       queryKey: [API_COST_OF_LIVING],
@@ -73,8 +78,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       staleTime: 5 * 60 * 1000,
     });
 
-  // ✅ Compute category totals (to track how much was spent per category)
-  const categoryTotals = transactions.reduce(
+  //  Compute category totals (to track how much was spent per category)
+  const categoryTotals: Record<string, number> = transactions.reduce(
     (acc: { [key: string]: number }, tx: Transaction) => {
       if (tx.type === "Expense") {
         const category = tx.category.trim().toLowerCase();
@@ -85,10 +90,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     {}
   );
 
-  // ✅ Compute categoryBudgets
+  // Compute categoryBudgets
   const categoryBudgets = budgets.map((budget: BudgetEntry) => ({
     ...budget,
-    spentAmount: categoryTotals[budget.category.toLowerCase()] || 0, // ✅ Ensure spentAmount is accurate
+    spentAmount: categoryTotals[budget.category.toLowerCase()] || 0, // Ensure spentAmount is accurate
   }));
 
   const addTransactionMutation = useMutation({

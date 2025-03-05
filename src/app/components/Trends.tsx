@@ -1,7 +1,7 @@
 "use client";
 
 import { Container, Typography, Paper, Box } from "@mui/material";
-import { Line } from "react-chartjs-2";
+
 import { useFinance } from "../context/FinanceContext";
 import "chartjs-adapter-date-fns";
 import {
@@ -15,8 +15,18 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import USMap from "./USMap";
+
 import Loading from "./Loading";
+import dynamic from "next/dynamic";
+
+const LineChart = dynamic(
+  () => import("react-chartjs-2").then((mod) => mod.Line),
+  {
+    ssr: false,
+  }
+);
+
+const USMap = dynamic(() => import("./USMap"), { ssr: false });
 
 ChartJS.register(
   LineElement,
@@ -114,7 +124,7 @@ export default function Trends() {
             {isLoading ? (
               <Loading name="Cost of Living Over Time" />
             ) : (
-              <Line
+              <LineChart
                 data={costOfLivingChartData}
                 options={costOfLivingChartOptions}
               />
