@@ -43,10 +43,10 @@ export default function RootLayout({
               fontWeight={"bold"}
               variant="h1"
               sx={{
-                fontSize: { xs: "24px", sm: "32px", md: "40px", lg: "40px" }, // Mobile-friendly scaling
+                fontSize: { xs: "32px", md: "40px", lg: "40px" }, // Mobile-friendly scaling
                 fontWeight: "bold",
                 textAlign: "center",
-                color: "inherit", // Ensures color is inherited properly
+                color: "rgb(23, 23, 23)", // Ensures color is inherited properly
               }}
               gutterBottom
               className={dmSerif.className}
